@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "asyncawait": "^1.0.6",
+    "bluebird": "^3.4.6",
     "fs-extra": "^0.30.0",
     "multer": "^1.2.0",
     "pubsub-js": "^1.5.3",
