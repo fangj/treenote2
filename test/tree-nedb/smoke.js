@@ -6,6 +6,7 @@ var tree;
 var async = require('asyncawait/async');
 var await = require('asyncawait/await');
 
+
 describe('tree', function(){
 
   before(function(done){
@@ -24,26 +25,32 @@ describe('tree', function(){
   //   })()
   // })
 
-  it('should mk_son_by_data ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
-        assert.equal(typeof son,'object');
-        console.log(son)
-        done();
-    })()
-  });
-
-  // it('should mk_brother_by_data ', function(done){
+  // it('should mk_son_by_data ', function(done){
   //     async(function(){
   //       var son= await(tree.mk_son_by_data('0','hello'));
   //       assert.equal(typeof son,'object');
-  //       console.log('son',son)
-  //       var bro= await(tree.mk_brother_by_data(son._id,'world'));
-  //       assert.equal(typeof bro,'object');
-  //       console.log('bro',bro)
+  //       console.log(son)
   //       done();
   //   })()
   // });
+
+  it('should mk_brother_by_data ', function(done){
+      async(function(){
+        var son= await(tree.mk_son_by_data('0','hello'));
+        assert.equal(typeof son,'object');
+        console.log('son',son)
+        var bro= await(tree.mk_brother_by_data(son._id,'world'));
+        assert.equal(typeof bro,'object');
+        console.log('youngerbro',bro)
+        var pNode= await(tree.read_node(son._link.p));
+        assert.equal(typeof pNode,'object');
+        console.log('pNode',pNode)
+        var firstBro= await(tree.mk_son_by_data(son._link.p,'excel'));
+        assert.equal(typeof firstBro,'object');
+        console.log('firstBro',firstBro)
+        done();
+    })()
+  });
 
 
 });

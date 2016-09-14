@@ -59,7 +59,7 @@ function read_nodes(gids) {
 
 function _mk_son_by_data(pNode,data,bgid){
   return async(function(){
-    console.log(pNode);
+    // console.log(pNode);
     var newNode={
         _link: {
           p: pNode._id,
