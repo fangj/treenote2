@@ -119,8 +119,31 @@ function update_data(gid, data) {
   })();
 }
 
-function remove(gid) {
 
+//递归删除所有子节点
+//gids是要删除的列表
+//rm是一个函数。删除节点的动作。
+function _remove_all_children(gids,rm) {
+  if (!gids||gids.length==0) {return Promise.resolve();//需要返回一个promise }
+  return Promise.all(gids.map(gid => {
+    return read_node(gid).then(node=>{ //读取当前节点
+      return _remove_all_children(node._link.children,rm).then(()=>{ //删除所有子节点
+        return rm(node); //然后删除当前节点
+      })
+    })
+  }));
+}
+
+//标记删除节点与所有子孙节点
+function remove(gid) {
+  return async(function(){
+     if(gid=='0')return;//根节点不能删除。
+     //收集所有子节点
+
+     const rm=(node)=>{console.log('rm',node)};
+     await(_remove_all_children([gid],rm));
+
+  })();
 }
 
 function move_as_son(gid, pgid) {

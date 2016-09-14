@@ -52,13 +52,20 @@ describe('tree', function(){
   //   })()
   // });
 
-    it('should update_data ', function(done){
+  // it('should update_data ', function(done){
+  //     async(function(){
+  //       var n= await(tree.update_data('0','hello'));
+  //       console.log('n',n);
+  //       done();
+  //   })()
+  // });
+
+
+  it('should remove ', function(done){
       async(function(){
-        var n= await(tree.update_data('0','hello'));
-        console.log('n',n);
+        // await(tree.remove('0'));
         done();
     })()
   });
-
 
 });
