@@ -101,8 +101,22 @@ function mk_brother_by_data(bgid,data) {
   })();
 }
 
-function update_data(gid, data) {
 
+function _update(db,query,update,callback){ 
+    var cb=function(err, numAffected, affectedDocuments, upsert){
+      callback(err,affectedDocuments);//修改callback的签名，使得第二个参数为更新过的doc
+    };
+    var options={ multi: false,returnUpdatedDocs:true };
+    db.update(query, update, options,cb);
+}
+
+const update=Promise.promisify(_update);//修改callback签名后就可以promisify
+
+function update_data(gid, data) {
+  return async(function(){
+    var node=await(update(db,{_id:gid}, { $set: { _data: data } }));//更新节点并返回更新后的节点
+    return node;
+  })();
 }
 
 function remove(gid) {
