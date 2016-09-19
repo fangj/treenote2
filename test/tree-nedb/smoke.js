@@ -61,13 +61,29 @@ describe('tree', function(){
   // });
 
 
-  it('should remove ', function(done){
+  // it('should remove ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_data('0','hello'));
+  //       var gson= await(tree.mk_son_by_data(son._id,'world'));
+  //       var removed_gids=await(tree.remove(son._id));
+  //       console.log(removed_gids)
+  //       assert.deepEqual(removed_gids.sort(),[son._id,gson._id].sort())
+  //       done();
+  //   })()
+  // });
+
+    it('should move as son ', function(done){
       async(function(){
         var son= await(tree.mk_son_by_data('0','hello'));
-        var gson= await(tree.mk_son_by_data(son._id,'world'));
-        var removed_gids=await(tree.remove(son._id));
-        console.log(removed_gids)
-        assert.deepEqual(removed_gids.sort(),[son._id,gson._id].sort())
+        var gson1= await(tree.mk_son_by_data(son._id,'world'));
+        var gson2= await(tree.mk_son_by_data(son._id,'book'));
+        son=await(tree.read_node(son._id)); 
+        console.log('son,gson1,gson2',son,gson1,gson2)
+        await(tree.move_as_son(gson1._id,gson2._id));
+        son=await(tree.read_node(son._id)); 
+        gson1=await(tree.read_node(gson1._id)); 
+        gson2=await(tree.read_node(gson2._id)); 
+        console.log('son,gson1,gson2',son,gson1,gson2)
         done();
     })()
   });

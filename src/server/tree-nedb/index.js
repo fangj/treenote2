@@ -149,10 +149,51 @@ function remove(gid) {
   })();
 }
 
-function move_as_son(gid, pgid) {
+function _isAncestor(pgid,gid){
+  if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
+  return read_node(gid).then(node=>{
+    // console.log('check',pgid,node._link.p,node)
+    if(node._link.p===pgid){
+      return true;
+    }else{
+      return _isAncestor(pgid,node._link.p);
+    }
+  })
+}
 
+function _move_as_son(gid, npNode,bgid){
+  return async(function(){
+    var gidIsAncestorOfNewParentNode=await(_isAncestor(gid,npNode._id));
+    if(gidIsAncestorOfNewParentNode){
+      console.log(gid,'is ancestor of',npNode._id)
+      return null;//要移动的节点不能是目标父节点的长辈节点
+    }
+    var pNode=await(db.findOneAsync({"_link.children":{$elemMatch:gid}}));//找到原父节点
+    await(db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
+    await(db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {}));//改变gid的父节点为新父节点
+    var pos=0;
+    var children=npNode._link.children;
+    if(bgid){
+      pos=children.indexOf(bgid)+1;
+    }
+    children.splice(pos,0,gid);//把新节点的ID插入到父节点中
+    await(db.updateAsync({_id:npNode._id}, npNode, {}));//插入父节点
+  })();  
+}
+
+//把gid节点移动为pgid的子节点
+//包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
+//移动前需要做检查。祖先节点不能移动为后辈的子节点
+function move_as_son(gid, pgid) {
+  return async(function(){
+    var npNode=await(db.findOneAsync({"_id":pgid}));//找到新父节点
+    return _move_as_son(gid,npNode);
+  })();  
 }
 
 function move_as_brother(gid, bgid) {
-
+  return async(function(){
+    var npNode=await(db.findOneAsync({"_link.children":{$elemMatch:bgid}}));//找到新父节点
+    return _move_as_son(gid,npNode,bgid);
+  })(); 
 }
