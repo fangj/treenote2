@@ -53,7 +53,7 @@ function read_node(gid) {
 
 function read_nodes(gids) {
   return async(function(){
-    var nodes=await(db.findOneAsync({_id:{$in:gids},_rm: { $exists: false }}));
+    var nodes=await(db.findAsync({_id:{$in:gids},_rm: { $exists: false }}));
     return nodes;
   })();
 }
