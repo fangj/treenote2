@@ -12,37 +12,33 @@ export default class TreeBrowser extends React.Component {
 
   constructor(props) {
     super(props);
+    this.state=this.buildStateByProps(props);
   }
 
+  buildStateByProps(props){
+    const {tree,root,render,node}=props;
+    if(!tree || !root||!render){return;}
+    if(node==undefined){
+      return {root:root,render:render,last_col:root,cur_col:root,cur_gid:null}
+    }else{
+      const pgid=node._link.p;
+      return {root:root,render:render,last_col:pgid,cur_col:pgid,cur_gid:gid}
+    }
+  }
 
   componentDidMount() {
-    this.refresh(this.props);
     const me=this;
-    function mySubscriber(msg,gid){
-      const {tree,root,render}=me.props;
-      me.refresh({tree,root,render,gid})
+    function mySubscriber(msg,_node){
+      const {node,...others}=me.props;
+      const state=this.buildStateByProps({node:_node,...others});
+      if(state){me.setState(state);}
     }
     this.token=PubSub.subscribe('click-node',mySubscriber);
   }
-  componentWillReceiveProps(nextProps) {
-    this.refresh(nextProps);
-  }
 
-  refresh(props){
-    const me=this;
-    const {tree,root,render,gid}=props;
-    if(!tree || !root||!render){return;}
-    var state;
-    if(gid==undefined){
-      state={root:root,render:render,last_col:root,cur_col:root,cur_gid:null}
-      this.setState(state);
-    }else{
-      tree.read(gid).then(node=>{
-        const pgid=node._link.p;
-        state={root:root,render:render,last_col:pgid,cur_col:pgid,cur_gid:gid}
-        me.setState(state);
-      })
-    }
+  componentWillReceiveProps(nextProps) {
+    const state=this.buildStateByProps(nextProps);
+    if(state){me.setState(state);}
   }
 
   render() {
@@ -55,7 +51,10 @@ export default class TreeBrowser extends React.Component {
 
   onClick(){
     console.log('click')
-    PubSub.publish('click-node',"Kt85zP5CFVsHtlxc")
+    const {tree}=this.props;
+    tree.read("Kt85zP5CFVsHtlxc").then(node=>{
+      PubSub.publish('click-node',node)
+    })
   }
   componentWillUnmount() {
     PubSub.unsubscribe(this.token);

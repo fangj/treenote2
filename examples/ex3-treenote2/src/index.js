@@ -15,7 +15,7 @@ function render(node,vtype){
 ReactDOM.render(
    <div>
    <TreeNodeReader tree={tree} view={props=><div>xx</div>} gid='0' level={1}/>
-   <TreeBrowser tree={tree} root='0' gid='4CoTsMzWLq0UNf89' render={render}/>
+   <TreeNodeReader tree={tree} view={TreeBrowser} gid='4CoTsMzWLq0UNf89' level={0} render={render}/>
    </div>,
   document.getElementById('root')
 );

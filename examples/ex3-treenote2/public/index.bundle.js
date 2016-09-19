@@ -56,7 +56,7 @@ webpackJsonp([0],{
 	        'xx'
 	      );
 	    }, gid: '0', level: 1 }),
-	  _react2.default.createElement(_tree_browser2.default, { tree: tree, root: '0', gid: '4CoTsMzWLq0UNf89', render: render })
+	  _react2.default.createElement(_tree_node_reader2.default, { tree: tree, view: _tree_browser2.default, gid: '4CoTsMzWLq0UNf89', level: 0, render: render })
 	), document.getElementById('root'));
 
 /***/ },
@@ -117,6 +117,12 @@ webpackJsonp([0],{
 	  return obj && obj.__esModule ? obj : { default: obj };
 	}
 
+	function _objectWithoutProperties(obj, keys) {
+	  var target = {};for (var i in obj) {
+	    if (keys.indexOf(i) >= 0) continue;if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;target[i] = obj[i];
+	  }return target;
+	}
+
 	function _classCallCheck(instance, Constructor) {
 	  if (!(instance instanceof Constructor)) {
 	    throw new TypeError("Cannot call a class as a function");
@@ -144,51 +150,53 @@ webpackJsonp([0],{
 	  function TreeBrowser(props) {
 	    _classCallCheck(this, TreeBrowser);
 
-	    return _possibleConstructorReturn(this, (TreeBrowser.__proto__ || Object.getPrototypeOf(TreeBrowser)).call(this, props));
+	    var _this = _possibleConstructorReturn(this, (TreeBrowser.__proto__ || Object.getPrototypeOf(TreeBrowser)).call(this, props));
+
+	    _this.state = _this.buildStateByProps(props);
+	    return _this;
 	  }
 
 	  _createClass(TreeBrowser, [{
+	    key: 'buildStateByProps',
+	    value: function buildStateByProps(props) {
+	      var tree = props.tree;
+	      var root = props.root;
+	      var render = props.render;
+	      var node = props.node;
+
+	      if (!tree || !root || !render) {
+	        return;
+	      }
+	      if (node == undefined) {
+	        return { root: root, render: render, last_col: root, cur_col: root, cur_gid: null };
+	      } else {
+	        var pgid = node._link.p;
+	        return { root: root, render: render, last_col: pgid, cur_col: pgid, cur_gid: gid };
+	      }
+	    }
+	  }, {
 	    key: 'componentDidMount',
 	    value: function componentDidMount() {
-	      this.refresh(this.props);
 	      var me = this;
-	      function mySubscriber(msg, gid) {
+	      function mySubscriber(msg, _node) {
 	        var _me$props = me.props;
-	        var tree = _me$props.tree;
-	        var root = _me$props.root;
-	        var render = _me$props.render;
+	        var node = _me$props.node;
 
-	        me.refresh({ tree: tree, root: root, render: render, gid: gid });
+	        var others = _objectWithoutProperties(_me$props, ['node']);
+
+	        var state = this.buildStateByProps(_extends({ node: _node }, others));
+	        if (state) {
+	          me.setState(state);
+	        }
 	      }
 	      this.token = PubSub.subscribe('click-node', mySubscriber);
 	    }
 	  }, {
 	    key: 'componentWillReceiveProps',
 	    value: function componentWillReceiveProps(nextProps) {
-	      this.refresh(nextProps);
-	    }
-	  }, {
-	    key: 'refresh',
-	    value: function refresh(props) {
-	      var me = this;
-	      var tree = props.tree;
-	      var root = props.root;
-	      var render = props.render;
-	      var gid = props.gid;
-
-	      if (!tree || !root || !render) {
-	        return;
-	      }
-	      var state;
-	      if (gid == undefined) {
-	        state = { root: root, render: render, last_col: root, cur_col: root, cur_gid: null };
-	        this.setState(state);
-	      } else {
-	        tree.read(gid).then(function (node) {
-	          var pgid = node._link.p;
-	          state = { root: root, render: render, last_col: pgid, cur_col: pgid, cur_gid: gid };
-	          me.setState(state);
-	        });
+	      var state = this.buildStateByProps(nextProps);
+	      if (state) {
+	        me.setState(state);
 	      }
 	    }
 	  }, {
@@ -205,7 +213,11 @@ webpackJsonp([0],{
 	    key: 'onClick',
 	    value: function onClick() {
 	      console.log('click');
-	      PubSub.publish('click-node', "Kt85zP5CFVsHtlxc");
+	      var tree = this.props.tree;
+
+	      tree.read("Kt85zP5CFVsHtlxc").then(function (node) {
+	        PubSub.publish('click-node', node);
+	      });
 	    }
 	  }, {
 	    key: 'componentWillUnmount',
@@ -734,14 +746,14 @@ webpackJsonp([0],{
 	        key: 'fetchDataByGid',
 	        value: function fetchDataByGid(gid, level) {
 	            //服务器端展开，没有缓存。未来可以拆解到缓存中
-	            return _tree.read_big_node(Number(gid), level);
+	            return _tree.read_big_node(gid, level);
 	        }
 	    }, {
 	        key: '_fetchDataByGid',
 	        value: function _fetchDataByGid(gid, level) {
 	            //客户端展开，可利用缓存
 	            // debugger;
-	            return _tree.read(Number(gid)).then(function (node) {
+	            return _tree.read(gid).then(function (node) {
 	                if (!level) {
 	                    return node;
 	                } else {
