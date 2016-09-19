@@ -1,8 +1,10 @@
 import React from 'react';
+import TreeNodeReader from 'treenote2/lib/client/ui/tree_node_reader';
+
 
 export default class NodeWithChildren extends React.Component {
   static propTypes = {
-    name: React.PropTypes.string,
+    node: React.PropTypes.object,
   };
 
   constructor(props) {
@@ -10,8 +12,14 @@ export default class NodeWithChildren extends React.Component {
   }
 
   render() {
+    const {render,node}=this.props;
     return (
-      <div></div>
+      <div>
+        <div className="node">{render(node)}</div>
+        <div className="children">{
+          node._link.children.map(gid=><TreeNodeReader key={gid}>{gid}</div>)
+        }</div>
+      </div>
     );
   }
 }

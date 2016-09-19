@@ -2,6 +2,9 @@ import React from 'react';
 require('./tree_browser.less');
 var PubSub =require('pubsub-js');
 import NodeWithChildren from './node_with_children';
+import TreeNodeReader from 'treenote2/lib/client/ui/tree_node_reader';
+
+
 export default class TreeBrowser extends React.Component {
   static propTypes = {
     name: React.PropTypes.string,
@@ -44,8 +47,9 @@ export default class TreeBrowser extends React.Component {
 
   render() {
     if(!this.state){return null;}
+    const {tree}=this.props;
     return (
-      <NodeWithChildren {...this.state}/>
+      <TreeNodeReader tree={tree} gid={this.state.root} view={NodeWithChildren} {...this.state}/>
     );
   }
 
