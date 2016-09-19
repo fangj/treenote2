@@ -63,7 +63,11 @@ describe('tree', function(){
 
   it('should remove ', function(done){
       async(function(){
-        // await(tree.remove('0'));
+        var son= await(tree.mk_son_by_data('0','hello'));
+        var gson= await(tree.mk_son_by_data(son._id,'world'));
+        var removed_gids=await(tree.remove(son._id));
+        console.log(removed_gids)
+        assert.deepEqual(removed_gids.sort(),[son._id,gson._id].sort())
         done();
     })()
   });

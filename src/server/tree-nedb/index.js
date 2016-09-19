@@ -45,15 +45,16 @@ function buildRootIfNotExist(cb){
 
 function read_node(gid) {
   return async(function(){
-    var root=await(db.findOneAsync({_id:gid}));
-    return root;
+    // console.log('read_node',gid);
+    var node=await(db.findOneAsync({_id:gid, _rm: { $exists: false }})); //rm标记表示节点已经被删除
+    return node;
   })();
 }
 
 function read_nodes(gids) {
   return async(function(){
-    var root=await(db.findOneAsync({_id:{$in:gids}}));
-    return root;
+    var nodes=await(db.findOneAsync({_id:{$in:gids},_rm: { $exists: false }}));
+    return nodes;
   })();
 }
 
@@ -120,15 +121,15 @@ function update_data(gid, data) {
 }
 
 
-//递归删除所有子节点
-//gids是要删除的列表
-//rm是一个函数。删除节点的动作。
-function _remove_all_children(gids,rm) {
-  if (!gids||gids.length==0) {return Promise.resolve();//需要返回一个promise }
+//递归遍历所有子节点
+//gids是要访问的节点id的列表
+//visit是一个函数。访问节点的动作。
+function _traversal_all_children(gids,visit) {
+  if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
   return Promise.all(gids.map(gid => {
     return read_node(gid).then(node=>{ //读取当前节点
-      return _remove_all_children(node._link.children,rm).then(()=>{ //删除所有子节点
-        return rm(node); //然后删除当前节点
+      return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
+        return visit(node); //然后访问当前节点
       })
     })
   }));
@@ -139,10 +140,12 @@ function remove(gid) {
   return async(function(){
      if(gid=='0')return;//根节点不能删除。
      //收集所有子节点
-
-     const rm=(node)=>{console.log('rm',node)};
-     await(_remove_all_children([gid],rm));
-
+     var gidsforRemove=[];
+     const rm=(node)=>{gidsforRemove.push(node._id)};
+     await(_traversal_all_children([gid],rm));
+     //批量删除
+     await(db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {}));//标记为删除
+     return gidsforRemove;
   })();
 }
 
