@@ -1,19 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-var RestfulTable=require('react-restui/lib/client/rest_table');
+import TreeBrowser from 'treenote2/lib/client/ui/tree_browser';
+var tree=require('treenote2/lib/client/tree.js')("_api");
 
-var selectRowProp = {
-          mode: "radio",
-          clickToSelect: true,
-          bgColor: "rgb(238, 193, 213)"
-        };
         
 ReactDOM.render(
-   <RestfulTable url='/api/post' keyField="_id" 
-    insertRow={true} deleteRow={true} selectRow={selectRowProp}>                
-        <TableHeaderColumn dataField="title" >title</TableHeaderColumn>
-        <TableHeaderColumn dataField="content" >content</TableHeaderColumn>
-  </RestfulTable>,
+   <div>
+   <TreeBrowser tree={tree} root='0' gid='4CoTsMzWLq0UNf89'/>
+   </div>,
   document.getElementById('root')
 );
 
