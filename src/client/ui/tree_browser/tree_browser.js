@@ -22,7 +22,7 @@ export default class TreeBrowser extends React.Component {
       return {root:root,render:render,last_col:root,cur_col:root,cur_gid:null}
     }else{
       const pgid=node._link.p;
-      return {root:root,render:render,last_col:pgid,cur_col:pgid,cur_gid:gid}
+      return {root:root,render:render,last_col:pgid,cur_col:pgid,cur_gid:node._id}
     }
   }
 
@@ -45,7 +45,7 @@ export default class TreeBrowser extends React.Component {
     if(!this.state){return null;}
     const {tree}=this.props;
     return (
-      <TreeNodeReader tree={tree} gid={this.state.root} view={NodeWithChildren} {...this.state}/>
+      <TreeNodeReader tree={tree} gid={this.state.root} level={1} view={NodeWithChildren} {...this.state}/>
     );
   }
 
