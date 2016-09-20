@@ -7,7 +7,7 @@ var tree=require('treenote2/lib/client/tree.js')("_api");
 
 function render(node,vtype){
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
-    return <div className="node"><div className="main">+{node._p}</div></div>
+    return <div className="node" onClick={()=>tree.mk_son_by_data(node._p,"new")}><div className="main">+{node._p}</div></div>
   }
   return <div className={vtype}><pre>{JSON.stringify(node)}</pre></div>
 }

@@ -20,7 +20,7 @@ export default class NodeWithChildren extends React.Component {
   render() {
     const me=this;
     const {render,node}=me.props;
-    const vnode={_type:"vnode",_p:node._link.p}
+    const vnode={_type:"vnode",_p:node._id}
     return (
         <div className="node" >
           <div className="main">{render(node)}</div>

@@ -29,7 +29,9 @@ webpackJsonp([0],[
 	    //虚节点,{_type:"vnode",_p:"pgid"}
 	    return _react2.default.createElement(
 	      'div',
-	      { className: 'node' },
+	      { className: 'node', onClick: function onClick() {
+	          return tree.mk_son_by_data(node._p, "new");
+	        } },
 	      _react2.default.createElement(
 	        'div',
 	        { className: 'main' },
@@ -210,7 +212,7 @@ webpackJsonp([0],[
 	      }
 	      var tree = this.props.tree;
 
-	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ tree: tree, gid: this.state.root, level: 1, view: _node_with_children2.default }, this.state));
+	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ tree: tree, gid: this.state.root, level: 5, view: _node_with_children2.default }, this.state));
 	    }
 	  }, {
 	    key: 'onClick',
@@ -322,7 +324,7 @@ webpackJsonp([0],[
 	      var render = _me$props.render;
 	      var node = _me$props.node;
 
-	      var vnode = { _type: "vnode", _p: node._link.p };
+	      var vnode = { _type: "vnode", _p: node._id };
 	      return _react2.default.createElement('div', { className: 'node' }, _react2.default.createElement('div', { className: 'main' }, render(node)), _react2.default.createElement('div', { className: 'children' }, render(vnode), node._children.map(function (cnode) {
 	        return Noder(cnode, me.props);
 	      })));

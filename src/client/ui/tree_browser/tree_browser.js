@@ -45,7 +45,7 @@ export default class TreeBrowser extends React.Component {
     if(!this.state){return null;}
     const {tree}=this.props;
     return (
-      <TreeNodeReader tree={tree} gid={this.state.root} level={1} view={NodeWithChildren} {...this.state}/>
+      <TreeNodeReader tree={tree} gid={this.state.root} level={5} view={NodeWithChildren} {...this.state}/>
     );
   }
 
