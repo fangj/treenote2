@@ -29,9 +29,13 @@ webpackJsonp([0],[
 	    //虚节点,{_type:"vnode",_p:"pgid"}
 	    return _react2.default.createElement(
 	      'div',
-	      { className: vtype },
-	      '+',
-	      node._p
+	      { className: 'node' },
+	      _react2.default.createElement(
+	        'div',
+	        { className: 'main' },
+	        '+',
+	        node._p
+	      )
 	    );
 	  }
 	  return _react2.default.createElement(
@@ -318,7 +322,8 @@ webpackJsonp([0],[
 	      var render = _me$props.render;
 	      var node = _me$props.node;
 
-	      return _react2.default.createElement('div', { className: 'node' }, _react2.default.createElement('div', { className: 'main' }, render(node)), _react2.default.createElement('div', { className: 'children' }, node._children.map(function (cnode) {
+	      var vnode = { _type: "vnode", _p: node._link.p };
+	      return _react2.default.createElement('div', { className: 'node' }, _react2.default.createElement('div', { className: 'main' }, render(node)), _react2.default.createElement('div', { className: 'children' }, render(vnode), node._children.map(function (cnode) {
 	        return Noder(cnode, me.props);
 	      })));
 	    }
