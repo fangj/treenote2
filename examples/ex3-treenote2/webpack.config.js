@@ -15,7 +15,8 @@ module.exports={
         // require("react") is external and available
         //  on the global var React
         "react": "React",
-        "react-dom": "ReactDOM"
+        "react-dom": "ReactDOM",
+        "pubsub-js":"PubSub"
   },
   module:{
     loaders:[

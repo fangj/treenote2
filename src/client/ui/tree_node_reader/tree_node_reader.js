@@ -1,6 +1,7 @@
 import { PropTypes } from "react";
 var util=require('../util');
 var _tree,treetool;
+var PubSub =require('pubsub-js');
 
 
 
@@ -47,7 +48,7 @@ class Reader extends React.Component {
         var mySubscriber = function( msg, data ){
             console.log( msg, data );
             // me.forceUpdate();
-            me.fetchData();
+            me.fetchData(me.props);
         };
         const subscribe=this.props.subscribe||[];
         this.tokens=subscribe.map(msg=>{
@@ -96,8 +97,7 @@ class Reader extends React.Component {
                 }else{
                     return treetool.expand(node,level);
                 }
-                
-            })
+            });
     }
 
 

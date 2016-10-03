@@ -1,5 +1,5 @@
 import React from 'react';
-import TreeNodeReader from 'treenote2/lib/client/ui/tree_node_reader';
+import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 
 const Noder=(_node,props)=>{
   const {render,node,tree,cur_col,cur_gid,last_col,root}=props;

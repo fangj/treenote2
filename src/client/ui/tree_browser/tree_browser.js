@@ -2,7 +2,7 @@ import React from 'react';
 require('./tree_browser.less');
 var PubSub =require('pubsub-js');
 import NodeWithChildren from './node_with_children';
-import TreeNodeReader from 'treenote2/lib/client/ui/tree_node_reader';
+import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 
 
 export default class TreeBrowser extends React.Component {
@@ -38,7 +38,7 @@ export default class TreeBrowser extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const state=this.buildStateByProps(nextProps);
-    if(state){me.setState(state);}
+    if(state){this.setState(state);}
   }
 
   render() {
