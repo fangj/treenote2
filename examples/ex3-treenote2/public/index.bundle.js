@@ -1,5 +1,6 @@
-webpackJsonp([0],[
-/* 0 */
+webpackJsonp([0],{
+
+/***/ 0:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15,6 +16,10 @@ webpackJsonp([0],[
 	var _tree_browser = __webpack_require__(3);
 
 	var _tree_browser2 = _interopRequireDefault(_tree_browser);
+
+	var _tree_browser3 = __webpack_require__(71);
+
+	var _tree_browser4 = _interopRequireDefault(_tree_browser3);
 
 	var _tree_node_reader = __webpack_require__(6);
 
@@ -34,7 +39,8 @@ webpackJsonp([0],[
 	      { className: 'node', onClick: function onClick() {
 	          tree.mk_son_by_data(node._p, "new").then(function (_) {
 	            console.log("publish updated ");
-	            PubSub.publish('updated');
+	            // PubSub.publish('updated');
+	            PubSub.publish(node._p);
 	          });
 	        } },
 	      _react2.default.createElement(
@@ -56,23 +62,23 @@ webpackJsonp([0],[
 	  );
 	}
 
+	// ReactDOM.render(
+	//    <div>
+	//    <TreeNodeReader tree={tree} view={props=><div>xx</div>} gid='0' level={1}/>
+	//    <TreeNodeReader tree={tree} view={TreeBrowser} root='0' gid='0' render={render} subscribe={["updated"]} expands={['0']}/>
+	//    </div>,
+	//   document.getElementById('root')
+	// );
+
 	_reactDom2.default.render(_react2.default.createElement(
 	  'div',
 	  null,
-	  _react2.default.createElement(_tree_node_reader2.default, { tree: tree, view: function view(props) {
-	      return _react2.default.createElement(
-	        'div',
-	        null,
-	        'xx'
-	      );
-	    }, gid: '0', level: 1 }),
-	  _react2.default.createElement(_tree_node_reader2.default, { tree: tree, view: _tree_browser2.default, root: '0', gid: '0', render: render, subscribe: ["updated"] })
+	  _react2.default.createElement(_tree_browser4.default, { tree: tree, render: render, gid: '0', expands: ['0', 'aEPi425BJDu0Nw3O', 'fp9rDCkZC4qekBRg', 'e5jEsZ9cf31Vy7T5'] })
 	), document.getElementById('root'));
 
 /***/ },
-/* 1 */,
-/* 2 */,
-/* 3 */
+
+/***/ 3:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -80,7 +86,8 @@ webpackJsonp([0],[
 	module.exports = __webpack_require__(4);
 
 /***/ },
-/* 4 */
+
+/***/ 4:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -137,15 +144,19 @@ webpackJsonp([0],[
 	      var root = props.root;
 	      var render = props.render;
 	      var node = props.node;
+	      var expands = props.expands;
 
 	      if (!tree || !root || !render) {
 	        return;
 	      }
+	      if (!expands) {
+	        expands = [];
+	      }
 	      if (node == undefined) {
-	        return { root: root, render: render, last_col: root, cur_col: root, cur_gid: null };
+	        return { root: root, render: render, expands: expands, cur_col: root, cur_gid: null };
 	      } else {
 	        var pgid = node._link.p;
-	        return { root: root, render: render, last_col: pgid, cur_col: pgid, cur_gid: node._id };
+	        return { root: root, render: render, expands: expands, cur_col: pgid, cur_gid: node._id };
 	      }
 	    }
 	  }, {
@@ -181,7 +192,7 @@ webpackJsonp([0],[
 	      }
 	      var tree = this.props.tree;
 
-	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ tree: tree, gid: this.state.root, level: 5, view: _node_with_children2.default }, this.state));
+	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ tree: tree, gid: this.state.root, level: 1, view: _node_with_children2.default }, this.state));
 	    }
 	  }, {
 	    key: 'onClick',
@@ -204,12 +215,12 @@ webpackJsonp([0],[
 	}(_react2.default.Component);
 
 	TreeBrowser.propTypes = {
-	  name: _react2.default.PropTypes.string
-	};
+	  expands: _react2.default.PropTypes.array };
 	exports.default = TreeBrowser;
 
 /***/ },
-/* 5 */
+
+/***/ 5:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -303,7 +314,8 @@ webpackJsonp([0],[
 	exports.default = NodeWithChildren;
 
 /***/ },
-/* 6 */
+
+/***/ 6:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -311,7 +323,8 @@ webpackJsonp([0],[
 	module.exports = __webpack_require__(7);
 
 /***/ },
-/* 7 */
+
+/***/ 7:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -485,7 +498,8 @@ webpackJsonp([0],[
 	module.exports = Reader;
 
 /***/ },
-/* 8 */
+
+/***/ 8:
 /***/ function(module, exports) {
 
 	"use strict";
@@ -514,13 +528,15 @@ webpackJsonp([0],[
 	};
 
 /***/ },
-/* 9 */
+
+/***/ 9:
 /***/ function(module, exports) {
 
 	module.exports = PubSub;
 
 /***/ },
-/* 10 */
+
+/***/ 10:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -559,7 +575,7 @@ webpackJsonp([0],[
 	function expandToRoot(gids) {
 	    var _this = this;
 
-	    var root = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+	    var root = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
 
 	    var gid = gids[0];
 	    return tree.read(gid).then(function (node) {
@@ -582,7 +598,8 @@ webpackJsonp([0],[
 	};
 
 /***/ },
-/* 11 */
+
+/***/ 11:
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -813,17 +830,15 @@ webpackJsonp([0],[
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
 
 /***/ },
-/* 12 */,
-/* 13 */
+
+/***/ 13:
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 14 */,
-/* 15 */,
-/* 16 */,
-/* 17 */
+
+/***/ 17:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -898,12 +913,168 @@ webpackJsonp([0],[
 	}
 
 	function read_big_node(gid) {
-	  var level = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+	  var level = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
 
 	  return agent.get(prefix + '/bignode/' + gid + '/' + level).then(function (res) {
 	    return res.body;
 	  });
 	}
 
+/***/ },
+
+/***/ 71:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = __webpack_require__(72);
+
+/***/ },
+
+/***/ 72:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _tree_node_reader = __webpack_require__(6);
+
+	var _tree_node_reader2 = _interopRequireDefault(_tree_node_reader);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
+
+	var noder = function noder(_node, props) {
+	  var render = props.render;
+	  var tree = props.tree;
+	  var cur_gid = props.cur_gid;
+	  var expands = props.expands;
+
+	  expands = expands || [];
+	  var expand = false; //是否要展开当前节点？默认不展开
+	  if (expands.length > 0) {
+	    var _expands = expands;
+
+	    var _expands2 = _toArray(_expands);
+
+	    var first = _expands2[0];
+
+	    var remain = _expands2.slice(1);
+
+	    if (first === _node._id) {
+	      expand = true; //当前结点在要展开的节点中，展开
+	    }
+	  }
+	  if (expand) {
+	    return _react2.default.createElement(_tree_node_reader2.default, { key: _node._id, tree: tree, gid: _node._id, view: Noder, render: render, cur_gid: cur_gid, level: 1, expands: remain });
+	  } else {
+	    return _react2.default.createElement(Noder, { key: _node._id, tree: tree, node: _node, render: render, cur_gid: cur_gid });
+	  }
+	};
+
+	var Noder = function (_React$Component) {
+	  _inherits(Noder, _React$Component);
+
+	  function Noder(props) {
+	    _classCallCheck(this, Noder);
+
+	    return _possibleConstructorReturn(this, (Noder.__proto__ || Object.getPrototypeOf(Noder)).call(this, props));
+	  }
+
+	  _createClass(Noder, [{
+	    key: 'render',
+	    value: function render() {
+	      var me = this;
+	      var _me$props = me.props;
+	      var render = _me$props.render;
+	      var node = _me$props.node;
+	      var expands = _me$props.expands;
+
+	      var vnode = { _type: "vnode", _p: node._id };
+	      return _react2.default.createElement(
+	        'div',
+	        { className: 'node' },
+	        _react2.default.createElement(
+	          'div',
+	          { className: 'main' },
+	          render(node)
+	        ),
+	        _react2.default.createElement(
+	          'div',
+	          { className: 'children' },
+	          render(vnode),
+	          node._children.map(function (cnode) {
+	            return noder(cnode, me.props);
+	          })
+	        )
+	      );
+	    }
+	  }]);
+
+	  return Noder;
+	}(_react2.default.Component);
+
+	Noder.propTypes = {
+	  node: _react2.default.PropTypes.object
+	};
+
+	var tree_browser = function (_React$Component2) {
+	  _inherits(tree_browser, _React$Component2);
+
+	  function tree_browser() {
+	    _classCallCheck(this, tree_browser);
+
+	    return _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).apply(this, arguments));
+	  }
+
+	  _createClass(tree_browser, [{
+	    key: 'render',
+	    value: function render() {
+	      var _props = this.props;
+	      var tree = _props.tree;
+	      var gid = _props.gid;
+
+	      var others = _objectWithoutProperties(_props, ['tree', 'gid']);
+
+	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ tree: tree, gid: gid, level: 0, view: treeRoot, cur_gid: gid }, others));
+	    }
+	  }]);
+
+	  return tree_browser;
+	}(_react2.default.Component);
+
+	exports.default = tree_browser;
+
+
+	var treeRoot = function treeRoot(props) {
+	  var node = props.node;
+	  var gid = props.gid;
+
+	  var others = _objectWithoutProperties(props, ['node', 'gid']);
+
+	  return noder(node, others);
+	};
+
 /***/ }
-]);
+
+});

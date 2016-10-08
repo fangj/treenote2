@@ -131,12 +131,40 @@
 	// shim for using process in browser
 
 	var process = module.exports = {};
+
+	// cached from whatever global is present so that test runners that stub it
+	// don't break things.  But we need to wrap it in a try catch in case it is
+	// wrapped in strict mode code which doesn't define any globals.  It's inside a
+	// function because try/catches deoptimize in certain engines.
+
+	var cachedSetTimeout;
+	var cachedClearTimeout;
+
+	(function () {
+	  try {
+	    cachedSetTimeout = setTimeout;
+	  } catch (e) {
+	    cachedSetTimeout = function () {
+	      throw new Error('setTimeout is not defined');
+	    }
+	  }
+	  try {
+	    cachedClearTimeout = clearTimeout;
+	  } catch (e) {
+	    cachedClearTimeout = function () {
+	      throw new Error('clearTimeout is not defined');
+	    }
+	  }
+	} ())
 	var queue = [];
 	var draining = false;
 	var currentQueue;
 	var queueIndex = -1;
 
 	function cleanUpNextTick() {
+	    if (!draining || !currentQueue) {
+	        return;
+	    }
 	    draining = false;
 	    if (currentQueue.length) {
 	        queue = currentQueue.concat(queue);
@@ -152,7 +180,7 @@
 	    if (draining) {
 	        return;
 	    }
-	    var timeout = setTimeout(cleanUpNextTick);
+	    var timeout = cachedSetTimeout(cleanUpNextTick);
 	    draining = true;
 
 	    var len = queue.length;
@@ -169,7 +197,7 @@
 	    }
 	    currentQueue = null;
 	    draining = false;
-	    clearTimeout(timeout);
+	    cachedClearTimeout(timeout);
 	}
 
 	process.nextTick = function (fun) {
@@ -181,7 +209,7 @@
 	    }
 	    queue.push(new Item(fun, args));
 	    if (queue.length === 1 && !draining) {
-	        setTimeout(drainQueue, 0);
+	        cachedSetTimeout(drainQueue, 0);
 	    }
 	};
 
@@ -1133,24 +1161,24 @@
 	  };
 
 	  // progress
-	  var handleProgress = function(direction, e) {
+	  var handleProgress = function(e){
 	    if (e.total > 0) {
 	      e.percent = e.loaded / e.total * 100;
 	    }
-	    e.direction = direction;
+	    e.direction = 'download';
 	    self.emit('progress', e);
-	  }
+	  };
 	  if (this.hasListeners('progress')) {
-	    try {
-	      xhr.onprogress = handleProgress.bind(null, 'download');
-	      if (xhr.upload) {
-	        xhr.upload.onprogress = handleProgress.bind(null, 'upload');
-	      }
-	    } catch(e) {
-	      // Accessing xhr.upload fails in IE from a web worker, so just pretend it doesn't exist.
-	      // Reported here:
-	      // https://connect.microsoft.com/IE/feedback/details/837245/xmlhttprequest-upload-throws-invalid-argument-when-used-from-web-worker-context
+	    xhr.onprogress = handleProgress;
+	  }
+	  try {
+	    if (xhr.upload && this.hasListeners('progress')) {
+	      xhr.upload.onprogress = handleProgress;
 	    }
+	  } catch(e) {
+	    // Accessing xhr.upload fails in IE from a web worker, so just pretend it doesn't exist.
+	    // Reported here:
+	    // https://connect.microsoft.com/IE/feedback/details/837245/xmlhttprequest-upload-throws-invalid-argument-when-used-from-web-worker-context
 	  }
 
 	  // timeout
@@ -1588,10 +1616,6 @@
 	  return this._fullfilledPromise.then(resolve, reject);
 	}
 
-	exports.catch = function(cb) {
-	  return this.then(undefined, cb);
-	};
-
 	/**
 	 * Allow for extension
 	 */
@@ -1681,42 +1705,21 @@
 	};
 
 	/**
-	 * Write the field `name` and `val`, or multiple fields with one object
-	 * for "multipart/form-data" request bodies.
+	 * Write the field `name` and `val` for "multipart/form-data"
+	 * request bodies.
 	 *
 	 * ``` js
 	 * request.post('/upload')
 	 *   .field('foo', 'bar')
 	 *   .end(callback);
-	 *
-	 * request.post('/upload')
-	 *   .field({ foo: 'bar', baz: 'qux' })
-	 *   .end(callback);
 	 * ```
 	 *
-	 * @param {String|Object} name
+	 * @param {String} name
 	 * @param {String|Blob|File|Buffer|fs.ReadStream} val
 	 * @return {Request} for chaining
 	 * @api public
 	 */
 	exports.field = function(name, val) {
-
-	  // name should be either a string or an object.
-	  if (null === name ||  undefined === name) {
-	    throw new Error('.field(name, val) name can not be empty');
-	  }
-
-	  if (isObject(name)) {
-	    for (var key in name) {
-	      this.field(key, name[key]);
-	    }
-	    return this;
-	  }
-
-	  // val should be defined now
-	  if (null === val || undefined === val) {
-	    throw new Error('.field(name, val) val can not be empty');
-	  }
 	  this._getFormData().append(name, val);
 	  return this;
 	};
@@ -2130,26 +2133,19 @@
 	      var _props$selectRow = _this.props.selectRow;
 	      var onSelectAll = _props$selectRow.onSelectAll;
 	      var unselectable = _props$selectRow.unselectable;
-	      var selected = _props$selectRow.selected;
 
 	      var selectedRowKeys = [];
 	      var result = true;
-	      var rows = isSelected ? _this.store.get() : _this.store.getRowByKey(_this.state.selectedRowKeys);
+	      var rows = _this.store.get();
 
-	      if (unselectable && unselectable.length > 0) {
-	        if (isSelected) {
-	          rows = rows.filter(function (r) {
-	            return unselectable.indexOf(r[keyField]) === -1 || selected && selected.indexOf(r[keyField]) !== -1;
-	          });
-	        } else {
-	          rows = rows.filter(function (r) {
-	            return unselectable.indexOf(r[keyField]) === -1;
-	          });
-	        }
+	      if (isSelected && unselectable && unselectable.length > 0) {
+	        rows = rows.filter(function (r) {
+	          return unselectable.indexOf(r[keyField]) === -1;
+	        });
 	      }
 
 	      if (onSelectAll) {
-	        result = _this.props.selectRow.onSelectAll(isSelected, rows);
+	        result = _this.props.selectRow.onSelectAll(isSelected, isSelected ? rows : _this.store.getRowByKey(_this.state.selectedRowKeys));
 	      }
 
 	      if (typeof result == 'undefined' || result !== false) {
@@ -2157,12 +2153,6 @@
 	          selectedRowKeys = Array.isArray(result) ? result : rows.map(function (r) {
 	            return r[keyField];
 	          });
-	        } else {
-	          if (unselectable && selected) {
-	            selectedRowKeys = selected.filter(function (r) {
-	              return unselectable.indexOf(r) > -1;
-	            });
-	          }
 	        }
 
 	        _this.store.setSelectedRowKey(selectedRowKeys);
@@ -2432,16 +2422,8 @@
 	    };
 
 	    this._adjustHeight = function () {
-	      var height = _this.props.height;
-	      var maxHeight = _this.props.maxHeight;
-
-	      if (typeof height === 'number' && !isNaN(height) || height.indexOf('%') === -1) {
-	        _this.refs.body.refs.container.style.height = parseFloat(height, 10) - _this.refs.header.refs.container.offsetHeight + 'px';
-	      }
-	      if (maxHeight) {
-	        maxHeight = typeof maxHeight === 'number' ? maxHeight : parseInt(maxHeight.replace('px', ''), 10);
-
-	        _this.refs.body.refs.container.style.maxHeight = maxHeight - _this.refs.header.refs.container.offsetHeight + 'px';
+	      if (typeof _this.props.height === 'number' && !isNaN(_this.props.height) || _this.props.height.indexOf('%') === -1) {
+	        _this.refs.body.refs.container.style.height = parseFloat(_this.props.height, 10) - _this.refs.header.refs.container.offsetHeight + 'px';
 	      }
 	    };
 
@@ -2616,8 +2598,7 @@
 	        });
 	      } else {
 	        // #125
-	        // remove !options.page for #709
-	        if (page > Math.ceil(nextProps.data.length / sizePerPage)) {
+	        if (!options.page && page > Math.ceil(nextProps.data.length / sizePerPage)) {
 	          page = 1;
 	        }
 	        var sortInfo = this.store.getSortInfo();
@@ -2769,26 +2750,19 @@
 	    key: 'isSelectAll',
 	    value: function isSelectAll() {
 	      if (this.store.isEmpty()) return false;
-	      var unselectable = this.props.selectRow.unselectable;
+
 	      var defaultSelectRowKeys = this.store.getSelectedRowKeys();
 	      var allRowKeys = this.store.getAllRowkey();
 
 	      if (defaultSelectRowKeys.length === 0) return false;
 	      var match = 0;
 	      var noFound = 0;
-	      var unSelectableCnt = 0;
 	      defaultSelectRowKeys.forEach(function (selected) {
 	        if (allRowKeys.indexOf(selected) !== -1) match++;else noFound++;
-	        if (unselectable && unselectable.indexOf(selected) !== -1) unSelectableCnt++;
 	      });
 
 	      if (noFound === defaultSelectRowKeys.length) return false;
-	      if (match === allRowKeys.length) {
-	        return true;
-	      } else {
-	        if (unselectable && match <= unSelectableCnt && unSelectableCnt === unselectable.length) return false;else return 'indeterminate';
-	      }
-	      // return (match === allRowKeys.length) ? true : 'indeterminate';
+	      return match === allRowKeys.length ? true : 'indeterminate';
 	    }
 	  }, {
 	    key: 'cleanSelected',
@@ -3690,6 +3664,7 @@
 	    };
 
 	    this.handleEditCell = function (rowIndex, columnIndex, e) {
+	      _this.editing = true;
 	      if (_this._isSelectRowDefined()) {
 	        columnIndex--;
 	        if (_this.props.selectRow.hideSelectColumn) columnIndex++;
@@ -3719,6 +3694,7 @@
 	    this.state = {
 	      currEditCell: null
 	    };
+	    this.editing = false;
 	  }
 
 	  _createClass(TableBody, [{
@@ -3740,7 +3716,7 @@
 	      var tableRows = this.props.data.map(function (data, r) {
 	        var tableColumns = this.props.columns.map(function (column, i) {
 	          var fieldValue = data[column.name];
-	          if (column.name !== this.props.keyField && // Key field can't be edit
+	          if (this.editing && column.name !== this.props.keyField && // Key field can't be edit
 	          column.editable && // column is editable? default is true, user can set it false
 	          this.state.currEditCell !== null && this.state.currEditCell.rid === r && this.state.currEditCell.cid === i) {
 	            var editable = column.editable;
@@ -3833,6 +3809,8 @@
 	          )
 	        ));
 	      }
+
+	      this.editing = false;
 
 	      return _react2['default'].createElement(
 	        'div',
@@ -4629,7 +4607,7 @@
 
 	var _ToastContainer2 = _interopRequireDefault(_ToastContainer);
 
-	var _ToastMessage = __webpack_require__(46);
+	var _ToastMessage = __webpack_require__(44);
 
 	var _ToastMessage2 = _interopRequireDefault(_ToastMessage);
 
@@ -4652,21 +4630,21 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _lodash = __webpack_require__(38);
-
-	var _lodash2 = _interopRequireDefault(_lodash);
-
 	var _react = __webpack_require__(1);
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _reactAddonsUpdate = __webpack_require__(40);
+	var _reactAddonsUpdate = __webpack_require__(38);
 
 	var _reactAddonsUpdate2 = _interopRequireDefault(_reactAddonsUpdate);
 
-	var _ToastMessage = __webpack_require__(46);
+	var _ToastMessage = __webpack_require__(44);
 
 	var _ToastMessage2 = _interopRequireDefault(_ToastMessage);
+
+	var _lodash = __webpack_require__(51);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -4682,7 +4660,7 @@
 	  _inherits(ToastContainer, _Component);
 
 	  function ToastContainer() {
-	    var _ref;
+	    var _Object$getPrototypeO;
 
 	    var _temp, _this, _ret;
 
@@ -4692,11 +4670,11 @@
 	      args[_key] = arguments[_key];
 	    }
 
-	    return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = ToastContainer.__proto__ || Object.getPrototypeOf(ToastContainer)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
+	    return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(ToastContainer)).call.apply(_Object$getPrototypeO, [this].concat(args))), _this), _this.state = {
 	      toasts: [],
 	      toastId: 0,
 	      messageList: []
-	    }, _this._handle_toast_remove = _this._handle_toast_remove.bind(_this), _temp), _possibleConstructorReturn(_this, _ret);
+	    }, _temp), _possibleConstructorReturn(_this, _ret);
 	  }
 
 	  _createClass(ToastContainer, [{
@@ -4756,7 +4734,7 @@
 	            }
 	            return _this3._handle_toast_on_click(e);
 	          },
-	          handleRemove: this._handle_toast_remove
+	          handleRemove: this._handle_toast_remove.bind(this)
 	        }
 	      });
 	      var toastOperation = _defineProperty({}, "" + (this.props.newestOnTop ? "$unshift" : "$push"), [newToast]);
@@ -4851,6 +4829,1078 @@
 /* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = __webpack_require__(39);
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule update
+	 */
+
+	/* global hasOwnProperty:true */
+
+	'use strict';
+
+	var _prodInvariant = __webpack_require__(40),
+	    _assign = __webpack_require__(41);
+
+	var keyOf = __webpack_require__(42);
+	var invariant = __webpack_require__(43);
+	var hasOwnProperty = {}.hasOwnProperty;
+
+	function shallowCopy(x) {
+	  if (Array.isArray(x)) {
+	    return x.concat();
+	  } else if (x && typeof x === 'object') {
+	    return _assign(new x.constructor(), x);
+	  } else {
+	    return x;
+	  }
+	}
+
+	var COMMAND_PUSH = keyOf({ $push: null });
+	var COMMAND_UNSHIFT = keyOf({ $unshift: null });
+	var COMMAND_SPLICE = keyOf({ $splice: null });
+	var COMMAND_SET = keyOf({ $set: null });
+	var COMMAND_MERGE = keyOf({ $merge: null });
+	var COMMAND_APPLY = keyOf({ $apply: null });
+
+	var ALL_COMMANDS_LIST = [COMMAND_PUSH, COMMAND_UNSHIFT, COMMAND_SPLICE, COMMAND_SET, COMMAND_MERGE, COMMAND_APPLY];
+
+	var ALL_COMMANDS_SET = {};
+
+	ALL_COMMANDS_LIST.forEach(function (command) {
+	  ALL_COMMANDS_SET[command] = true;
+	});
+
+	function invariantArrayCase(value, spec, command) {
+	  !Array.isArray(value) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected target of %s to be an array; got %s.', command, value) : _prodInvariant('1', command, value) : void 0;
+	  var specValue = spec[command];
+	  !Array.isArray(specValue) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array; got %s. Did you forget to wrap your parameter in an array?', command, specValue) : _prodInvariant('2', command, specValue) : void 0;
+	}
+
+	/**
+	 * Returns a updated shallow copy of an object without mutating the original.
+	 * See https://facebook.github.io/react/docs/update.html for details.
+	 */
+	function update(value, spec) {
+	  !(typeof spec === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): You provided a key path to update() that did not contain one of %s. Did you forget to include {%s: ...}?', ALL_COMMANDS_LIST.join(', '), COMMAND_SET) : _prodInvariant('3', ALL_COMMANDS_LIST.join(', '), COMMAND_SET) : void 0;
+
+	  if (hasOwnProperty.call(spec, COMMAND_SET)) {
+	    !(Object.keys(spec).length === 1) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Cannot have more than one key in an object with %s', COMMAND_SET) : _prodInvariant('4', COMMAND_SET) : void 0;
+
+	    return spec[COMMAND_SET];
+	  }
+
+	  var nextValue = shallowCopy(value);
+
+	  if (hasOwnProperty.call(spec, COMMAND_MERGE)) {
+	    var mergeObj = spec[COMMAND_MERGE];
+	    !(mergeObj && typeof mergeObj === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): %s expects a spec of type \'object\'; got %s', COMMAND_MERGE, mergeObj) : _prodInvariant('5', COMMAND_MERGE, mergeObj) : void 0;
+	    !(nextValue && typeof nextValue === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): %s expects a target of type \'object\'; got %s', COMMAND_MERGE, nextValue) : _prodInvariant('6', COMMAND_MERGE, nextValue) : void 0;
+	    _assign(nextValue, spec[COMMAND_MERGE]);
+	  }
+
+	  if (hasOwnProperty.call(spec, COMMAND_PUSH)) {
+	    invariantArrayCase(value, spec, COMMAND_PUSH);
+	    spec[COMMAND_PUSH].forEach(function (item) {
+	      nextValue.push(item);
+	    });
+	  }
+
+	  if (hasOwnProperty.call(spec, COMMAND_UNSHIFT)) {
+	    invariantArrayCase(value, spec, COMMAND_UNSHIFT);
+	    spec[COMMAND_UNSHIFT].forEach(function (item) {
+	      nextValue.unshift(item);
+	    });
+	  }
+
+	  if (hasOwnProperty.call(spec, COMMAND_SPLICE)) {
+	    !Array.isArray(value) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Expected %s target to be an array; got %s', COMMAND_SPLICE, value) : _prodInvariant('7', COMMAND_SPLICE, value) : void 0;
+	    !Array.isArray(spec[COMMAND_SPLICE]) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array of arrays; got %s. Did you forget to wrap your parameters in an array?', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : _prodInvariant('8', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : void 0;
+	    spec[COMMAND_SPLICE].forEach(function (args) {
+	      !Array.isArray(args) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array of arrays; got %s. Did you forget to wrap your parameters in an array?', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : _prodInvariant('8', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : void 0;
+	      nextValue.splice.apply(nextValue, args);
+	    });
+	  }
+
+	  if (hasOwnProperty.call(spec, COMMAND_APPLY)) {
+	    !(typeof spec[COMMAND_APPLY] === 'function') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be a function; got %s.', COMMAND_APPLY, spec[COMMAND_APPLY]) : _prodInvariant('9', COMMAND_APPLY, spec[COMMAND_APPLY]) : void 0;
+	    nextValue = spec[COMMAND_APPLY](nextValue);
+	  }
+
+	  for (var k in spec) {
+	    if (!(ALL_COMMANDS_SET.hasOwnProperty(k) && ALL_COMMANDS_SET[k])) {
+	      nextValue[k] = update(value[k], spec[k]);
+	    }
+	  }
+
+	  return nextValue;
+	}
+
+	module.exports = update;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
+
+/***/ },
+/* 40 */
+/***/ function(module, exports) {
+
+	/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule reactProdInvariant
+	 * 
+	 */
+	'use strict';
+
+	/**
+	 * WARNING: DO NOT manually require this module.
+	 * This is a replacement for `invariant(...)` used by the error code system
+	 * and will _only_ be required by the corresponding babel pass.
+	 * It always throws.
+	 */
+
+	function reactProdInvariant(code) {
+	  var argCount = arguments.length - 1;
+
+	  var message = 'Minified React error #' + code + '; visit ' + 'http://facebook.github.io/react/docs/error-decoder.html?invariant=' + code;
+
+	  for (var argIdx = 0; argIdx < argCount; argIdx++) {
+	    message += '&args[]=' + encodeURIComponent(arguments[argIdx + 1]);
+	  }
+
+	  message += ' for the full message or use the non-minified dev environment' + ' for full errors and additional helpful warnings.';
+
+	  var error = new Error(message);
+	  error.name = 'Invariant Violation';
+	  error.framesToPop = 1; // we don't care about reactProdInvariant's own frame
+
+	  throw error;
+	}
+
+	module.exports = reactProdInvariant;
+
+/***/ },
+/* 41 */
+/***/ function(module, exports) {
+
+	'use strict';
+	/* eslint-disable no-unused-vars */
+	var hasOwnProperty = Object.prototype.hasOwnProperty;
+	var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+	function toObject(val) {
+		if (val === null || val === undefined) {
+			throw new TypeError('Object.assign cannot be called with null or undefined');
+		}
+
+		return Object(val);
+	}
+
+	function shouldUseNative() {
+		try {
+			if (!Object.assign) {
+				return false;
+			}
+
+			// Detect buggy property enumeration order in older V8 versions.
+
+			// https://bugs.chromium.org/p/v8/issues/detail?id=4118
+			var test1 = new String('abc');  // eslint-disable-line
+			test1[5] = 'de';
+			if (Object.getOwnPropertyNames(test1)[0] === '5') {
+				return false;
+			}
+
+			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+			var test2 = {};
+			for (var i = 0; i < 10; i++) {
+				test2['_' + String.fromCharCode(i)] = i;
+			}
+			var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
+				return test2[n];
+			});
+			if (order2.join('') !== '0123456789') {
+				return false;
+			}
+
+			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+			var test3 = {};
+			'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
+				test3[letter] = letter;
+			});
+			if (Object.keys(Object.assign({}, test3)).join('') !==
+					'abcdefghijklmnopqrst') {
+				return false;
+			}
+
+			return true;
+		} catch (e) {
+			// We don't expect any of the above to throw, but better to be safe.
+			return false;
+		}
+	}
+
+	module.exports = shouldUseNative() ? Object.assign : function (target, source) {
+		var from;
+		var to = toObject(target);
+		var symbols;
+
+		for (var s = 1; s < arguments.length; s++) {
+			from = Object(arguments[s]);
+
+			for (var key in from) {
+				if (hasOwnProperty.call(from, key)) {
+					to[key] = from[key];
+				}
+			}
+
+			if (Object.getOwnPropertySymbols) {
+				symbols = Object.getOwnPropertySymbols(from);
+				for (var i = 0; i < symbols.length; i++) {
+					if (propIsEnumerable.call(from, symbols[i])) {
+						to[symbols[i]] = from[symbols[i]];
+					}
+				}
+			}
+		}
+
+		return to;
+	};
+
+
+/***/ },
+/* 42 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 */
+
+	/**
+	 * Allows extraction of a minified key. Let's the build system minify keys
+	 * without losing the ability to dynamically use key strings as values
+	 * themselves. Pass in an object with a single key/val pair and it will return
+	 * you the string key of that single record. Suppose you want to grab the
+	 * value for a key 'className' inside of an object. Key/val minification may
+	 * have aliased that key to be 'xa12'. keyOf({className: null}) will return
+	 * 'xa12' in that case. Resolve keys you want to use once at startup time, then
+	 * reuse those resolutions.
+	 */
+	var keyOf = function keyOf(oneKeyObj) {
+	  var key;
+	  for (key in oneKeyObj) {
+	    if (!oneKeyObj.hasOwnProperty(key)) {
+	      continue;
+	    }
+	    return key;
+	  }
+	  return null;
+	};
+
+	module.exports = keyOf;
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 */
+
+	'use strict';
+
+	/**
+	 * Use invariant() to assert state which your program assumes to be true.
+	 *
+	 * Provide sprintf-style format (only %s is supported) and arguments
+	 * to provide information about what broke and what you were
+	 * expecting.
+	 *
+	 * The invariant message will be stripped in production, but the invariant
+	 * will remain to ensure logic does not differ in production.
+	 */
+
+	function invariant(condition, format, a, b, c, d, e, f) {
+	  if (process.env.NODE_ENV !== 'production') {
+	    if (format === undefined) {
+	      throw new Error('invariant requires an error message argument');
+	    }
+	  }
+
+	  if (!condition) {
+	    var error;
+	    if (format === undefined) {
+	      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
+	    } else {
+	      var args = [a, b, c, d, e, f];
+	      var argIndex = 0;
+	      error = new Error(format.replace(/%s/g, function () {
+	        return args[argIndex++];
+	      }));
+	      error.name = 'Invariant Violation';
+	    }
+
+	    error.framesToPop = 1; // we don't care about invariant's own frame
+	    throw error;
+	  }
+	}
+
+	module.exports = invariant;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.jQuery = exports.animation = undefined;
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactAddonsUpdate = __webpack_require__(38);
+
+	var _reactAddonsUpdate2 = _interopRequireDefault(_reactAddonsUpdate);
+
+	var _classnames = __webpack_require__(26);
+
+	var _classnames2 = _interopRequireDefault(_classnames);
+
+	var _animationMixin = __webpack_require__(45);
+
+	var _animationMixin2 = _interopRequireDefault(_animationMixin);
+
+	var _jQueryMixin = __webpack_require__(50);
+
+	var _jQueryMixin2 = _interopRequireDefault(_jQueryMixin);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function noop() {}
+
+	var ToastMessageSpec = {
+	  displayName: "ToastMessage",
+
+	  getDefaultProps: function getDefaultProps() {
+	    var iconClassNames = {
+	      error: "toast-error",
+	      info: "toast-info",
+	      success: "toast-success",
+	      warning: "toast-warning"
+	    };
+
+	    return {
+	      className: "toast",
+	      iconClassNames: iconClassNames,
+	      titleClassName: "toast-title",
+	      messageClassName: "toast-message",
+	      tapToDismiss: true,
+	      closeButton: false
+	    };
+	  },
+	  handleOnClick: function handleOnClick(event) {
+	    this.props.handleOnClick(event);
+	    if (this.props.tapToDismiss) {
+	      this.hideToast(true);
+	    }
+	  },
+	  _handle_close_button_click: function _handle_close_button_click(event) {
+	    event.stopPropagation();
+	    this.hideToast(true);
+	  },
+	  _handle_remove: function _handle_remove() {
+	    this.props.handleRemove(this.props.toastId);
+	  },
+	  _render_close_button: function _render_close_button() {
+	    return this.props.closeButton ? _react2.default.createElement("button", {
+	      className: "toast-close-button", role: "button",
+	      onClick: this._handle_close_button_click,
+	      dangerouslySetInnerHTML: { __html: "&times;" }
+	    }) : false;
+	  },
+	  _render_title_element: function _render_title_element() {
+	    return this.props.title ? _react2.default.createElement(
+	      "div",
+	      { className: this.props.titleClassName },
+	      this.props.title
+	    ) : false;
+	  },
+	  _render_message_element: function _render_message_element() {
+	    return this.props.message ? _react2.default.createElement(
+	      "div",
+	      { className: this.props.messageClassName },
+	      this.props.message
+	    ) : false;
+	  },
+	  render: function render() {
+	    var iconClassName = this.props.iconClassName || this.props.iconClassNames[this.props.type];
+
+	    return _react2.default.createElement(
+	      "div",
+	      {
+	        className: (0, _classnames2.default)(this.props.className, iconClassName),
+	        style: this.props.style,
+	        onClick: this.handleOnClick,
+	        onMouseEnter: this.handleMouseEnter,
+	        onMouseLeave: this.handleMouseLeave
+	      },
+	      this._render_close_button(),
+	      this._render_title_element(),
+	      this._render_message_element()
+	    );
+	  }
+	};
+
+	var animation = exports.animation = _react2.default.createClass((0, _reactAddonsUpdate2.default)(ToastMessageSpec, {
+	  displayName: { $set: "ToastMessage.animation" },
+	  mixins: { $set: [_animationMixin2.default] }
+	}));
+
+	var jQuery = exports.jQuery = _react2.default.createClass((0, _reactAddonsUpdate2.default)(ToastMessageSpec, {
+	  displayName: { $set: "ToastMessage.jQuery" },
+	  mixins: { $set: [_jQueryMixin2.default] }
+	}));
+
+	/*
+	 * assign default noop functions
+	 */
+	ToastMessageSpec.handleMouseEnter = noop;
+	ToastMessageSpec.handleMouseLeave = noop;
+	ToastMessageSpec.hideToast = noop;
+
+	var ToastMessage = _react2.default.createClass(ToastMessageSpec);
+
+	ToastMessage.animation = animation;
+	ToastMessage.jQuery = jQuery;
+
+	exports.default = ToastMessage;
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _ReactTransitionEvents = __webpack_require__(46);
+
+	var _ReactTransitionEvents2 = _interopRequireDefault(_ReactTransitionEvents);
+
+	var _reactDom = __webpack_require__(2);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
+	var _elementClass = __webpack_require__(49);
+
+	var _elementClass2 = _interopRequireDefault(_elementClass);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var TICK = 17;
+	var toString = Object.prototype.toString;
+	exports.default = {
+	  getDefaultProps: function getDefaultProps() {
+	    return {
+	      transition: null, // some examples defined in index.scss (scale, fadeInOut, rotate)
+	      showAnimation: "animated bounceIn", // or other animations from animate.css
+	      hideAnimation: "animated bounceOut",
+	      timeOut: 5000,
+	      extendedTimeOut: 1000
+	    };
+	  },
+	  componentWillMount: function componentWillMount() {
+	    this.classNameQueue = [];
+	    this.isHiding = false;
+	    this.intervalId = null;
+	  },
+	  componentDidMount: function componentDidMount() {
+	    var _this = this;
+
+	    this._is_mounted = true;
+	    this._show();
+	    var node = _reactDom2.default.findDOMNode(this);
+
+	    var onHideComplete = function onHideComplete() {
+	      if (_this.isHiding) {
+	        _this._set_is_hiding(false);
+	        _ReactTransitionEvents2.default.removeEndEventListener(node, onHideComplete);
+	        _this._handle_remove();
+	      }
+	    };
+	    _ReactTransitionEvents2.default.addEndEventListener(node, onHideComplete);
+
+	    if (this.props.timeOut > 0) {
+	      this._set_interval_id(setTimeout(this.hideToast, this.props.timeOut));
+	    }
+	  },
+	  componentWillUnmount: function componentWillUnmount() {
+	    this._is_mounted = false;
+	    if (this.intervalId) {
+	      clearTimeout(this.intervalId);
+	    }
+	  },
+	  _set_transition: function _set_transition(hide) {
+	    var animationType = hide ? "leave" : "enter";
+	    var node = _reactDom2.default.findDOMNode(this);
+	    var className = this.props.transition + "-" + animationType;
+	    var activeClassName = className + "-active";
+
+	    var endListener = function endListener(e) {
+	      if (e && e.target !== node) {
+	        return;
+	      }
+
+	      var classList = (0, _elementClass2.default)(node);
+	      classList.remove(className);
+	      classList.remove(activeClassName);
+
+	      _ReactTransitionEvents2.default.removeEndEventListener(node, endListener);
+	    };
+
+	    _ReactTransitionEvents2.default.addEndEventListener(node, endListener);
+
+	    (0, _elementClass2.default)(node).add(className);
+
+	    // Need to do this to actually trigger a transition.
+	    this._queue_class(activeClassName);
+	  },
+	  _clear_transition: function _clear_transition(hide) {
+	    var node = _reactDom2.default.findDOMNode(this);
+	    var animationType = hide ? "leave" : "enter";
+	    var className = this.props.transition + "-" + animationType;
+	    var activeClassName = className + "-active";
+
+	    var classList = (0, _elementClass2.default)(node);
+	    classList.remove(className);
+	    classList.remove(activeClassName);
+	  },
+	  _set_animation: function _set_animation(hide) {
+	    var node = _reactDom2.default.findDOMNode(this);
+	    var animations = this._get_animation_classes(hide);
+	    var endListener = function endListener(e) {
+	      if (e && e.target !== node) {
+	        return;
+	      }
+
+	      animations.forEach(function (anim) {
+	        return (0, _elementClass2.default)(node).remove(anim);
+	      });
+
+	      _ReactTransitionEvents2.default.removeEndEventListener(node, endListener);
+	    };
+
+	    _ReactTransitionEvents2.default.addEndEventListener(node, endListener);
+
+	    animations.forEach(function (anim) {
+	      return (0, _elementClass2.default)(node).add(anim);
+	    });
+	  },
+	  _get_animation_classes: function _get_animation_classes(hide) {
+	    var animations = hide ? this.props.hideAnimation : this.props.showAnimation;
+	    if ("[object Array]" === toString.call(animations)) {
+	      return animations;
+	    } else if ("string" === typeof animations) {
+	      return animations.split(" ");
+	    }
+	  },
+	  _clear_animation: function _clear_animation(hide) {
+	    var node = _reactDom2.default.findDOMNode(this);
+	    var animations = this._get_animation_classes(hide);
+	    animations.forEach(function (animation) {
+	      return (0, _elementClass2.default)(node).remove(animation);
+	    });
+	  },
+	  _queue_class: function _queue_class(className) {
+	    this.classNameQueue.push(className);
+
+	    if (!this.timeout) {
+	      this.timeout = setTimeout(this._flush_class_name_queue, TICK);
+	    }
+	  },
+	  _flush_class_name_queue: function _flush_class_name_queue() {
+	    var _this2 = this;
+
+	    if (this._is_mounted) {
+	      (function () {
+	        var node = _reactDom2.default.findDOMNode(_this2);
+	        _this2.classNameQueue.forEach(function (className) {
+	          return (0, _elementClass2.default)(node).add(className);
+	        });
+	      })();
+	    }
+	    this.classNameQueue.length = 0;
+	    this.timeout = null;
+	  },
+	  _show: function _show() {
+	    if (this.props.transition) {
+	      this._set_transition();
+	    } else if (this.props.showAnimation) {
+	      this._set_animation();
+	    }
+	  },
+	  handleMouseEnter: function handleMouseEnter() {
+	    clearTimeout(this.intervalId);
+	    this._set_interval_id(null);
+	    if (this.isHiding) {
+	      this._set_is_hiding(false);
+
+	      if (this.props.hideAnimation) {
+	        this._clear_animation(true);
+	      } else if (this.props.transition) {
+	        this._clear_transition(true);
+	      }
+	    }
+	  },
+	  handleMouseLeave: function handleMouseLeave() {
+	    if (!this.isHiding && (this.props.timeOut > 0 || this.props.extendedTimeOut > 0)) {
+	      this._set_interval_id(setTimeout(this.hideToast, this.props.extendedTimeOut));
+	    }
+	  },
+	  hideToast: function hideToast(override) {
+	    if (this.isHiding || this.intervalId === null && !override) {
+	      return;
+	    }
+
+	    this._set_is_hiding(true);
+	    if (this.props.transition) {
+	      this._set_transition(true);
+	    } else if (this.props.hideAnimation) {
+	      this._set_animation(true);
+	    } else {
+	      this._handle_remove();
+	    }
+	  },
+	  _set_interval_id: function _set_interval_id(intervalId) {
+	    this.intervalId = intervalId;
+	  },
+	  _set_is_hiding: function _set_is_hiding(isHiding) {
+	    this.isHiding = isHiding;
+	  }
+	};
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Copyright 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule ReactTransitionEvents
+	 */
+
+	'use strict';
+
+	var ExecutionEnvironment = __webpack_require__(47);
+
+	var getVendorPrefixedEventName = __webpack_require__(48);
+
+	var endEvents = [];
+
+	function detectEvents() {
+	  var animEnd = getVendorPrefixedEventName('animationend');
+	  var transEnd = getVendorPrefixedEventName('transitionend');
+
+	  if (animEnd) {
+	    endEvents.push(animEnd);
+	  }
+
+	  if (transEnd) {
+	    endEvents.push(transEnd);
+	  }
+	}
+
+	if (ExecutionEnvironment.canUseDOM) {
+	  detectEvents();
+	}
+
+	// We use the raw {add|remove}EventListener() call because EventListener
+	// does not know how to remove event listeners and we really should
+	// clean up. Also, these events are not triggered in older browsers
+	// so we should be A-OK here.
+
+	function addEventListener(node, eventName, eventListener) {
+	  node.addEventListener(eventName, eventListener, false);
+	}
+
+	function removeEventListener(node, eventName, eventListener) {
+	  node.removeEventListener(eventName, eventListener, false);
+	}
+
+	var ReactTransitionEvents = {
+	  addEndEventListener: function (node, eventListener) {
+	    if (endEvents.length === 0) {
+	      // If CSS transitions are not supported, trigger an "end animation"
+	      // event immediately.
+	      window.setTimeout(eventListener, 0);
+	      return;
+	    }
+	    endEvents.forEach(function (endEvent) {
+	      addEventListener(node, endEvent, eventListener);
+	    });
+	  },
+
+	  removeEndEventListener: function (node, eventListener) {
+	    if (endEvents.length === 0) {
+	      return;
+	    }
+	    endEvents.forEach(function (endEvent) {
+	      removeEventListener(node, endEvent, eventListener);
+	    });
+	  }
+	};
+
+	module.exports = ReactTransitionEvents;
+
+/***/ },
+/* 47 */
+/***/ function(module, exports) {
+
+	/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 */
+
+	'use strict';
+
+	var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
+
+	/**
+	 * Simple, lightweight module assisting with the detection and context of
+	 * Worker. Helps avoid circular dependencies and allows code to reason about
+	 * whether or not they are in a Worker, even if they never include the main
+	 * `ReactWorker` dependency.
+	 */
+	var ExecutionEnvironment = {
+
+	  canUseDOM: canUseDOM,
+
+	  canUseWorkers: typeof Worker !== 'undefined',
+
+	  canUseEventListeners: canUseDOM && !!(window.addEventListener || window.attachEvent),
+
+	  canUseViewport: canUseDOM && !!window.screen,
+
+	  isInWorker: !canUseDOM // For now, this is true - might change in the future.
+
+	};
+
+	module.exports = ExecutionEnvironment;
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Copyright 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule getVendorPrefixedEventName
+	 */
+
+	'use strict';
+
+	var ExecutionEnvironment = __webpack_require__(47);
+
+	/**
+	 * Generate a mapping of standard vendor prefixes using the defined style property and event name.
+	 *
+	 * @param {string} styleProp
+	 * @param {string} eventName
+	 * @returns {object}
+	 */
+	function makePrefixMap(styleProp, eventName) {
+	  var prefixes = {};
+
+	  prefixes[styleProp.toLowerCase()] = eventName.toLowerCase();
+	  prefixes['Webkit' + styleProp] = 'webkit' + eventName;
+	  prefixes['Moz' + styleProp] = 'moz' + eventName;
+	  prefixes['ms' + styleProp] = 'MS' + eventName;
+	  prefixes['O' + styleProp] = 'o' + eventName.toLowerCase();
+
+	  return prefixes;
+	}
+
+	/**
+	 * A list of event names to a configurable list of vendor prefixes.
+	 */
+	var vendorPrefixes = {
+	  animationend: makePrefixMap('Animation', 'AnimationEnd'),
+	  animationiteration: makePrefixMap('Animation', 'AnimationIteration'),
+	  animationstart: makePrefixMap('Animation', 'AnimationStart'),
+	  transitionend: makePrefixMap('Transition', 'TransitionEnd')
+	};
+
+	/**
+	 * Event names that have already been detected and prefixed (if applicable).
+	 */
+	var prefixedEventNames = {};
+
+	/**
+	 * Element to check for prefixes on.
+	 */
+	var style = {};
+
+	/**
+	 * Bootstrap if a DOM exists.
+	 */
+	if (ExecutionEnvironment.canUseDOM) {
+	  style = document.createElement('div').style;
+
+	  // On some platforms, in particular some releases of Android 4.x,
+	  // the un-prefixed "animation" and "transition" properties are defined on the
+	  // style object but the events that fire will still be prefixed, so we need
+	  // to check if the un-prefixed events are usable, and if not remove them from the map.
+	  if (!('AnimationEvent' in window)) {
+	    delete vendorPrefixes.animationend.animation;
+	    delete vendorPrefixes.animationiteration.animation;
+	    delete vendorPrefixes.animationstart.animation;
+	  }
+
+	  // Same as above
+	  if (!('TransitionEvent' in window)) {
+	    delete vendorPrefixes.transitionend.transition;
+	  }
+	}
+
+	/**
+	 * Attempts to determine the correct vendor prefixed event name.
+	 *
+	 * @param {string} eventName
+	 * @returns {string}
+	 */
+	function getVendorPrefixedEventName(eventName) {
+	  if (prefixedEventNames[eventName]) {
+	    return prefixedEventNames[eventName];
+	  } else if (!vendorPrefixes[eventName]) {
+	    return eventName;
+	  }
+
+	  var prefixMap = vendorPrefixes[eventName];
+
+	  for (var styleProp in prefixMap) {
+	    if (prefixMap.hasOwnProperty(styleProp) && styleProp in style) {
+	      return prefixedEventNames[eventName] = prefixMap[styleProp];
+	    }
+	  }
+
+	  return '';
+	}
+
+	module.exports = getVendorPrefixedEventName;
+
+/***/ },
+/* 49 */
+/***/ function(module, exports) {
+
+	module.exports = function(opts) {
+	  return new ElementClass(opts)
+	}
+
+	function indexOf(arr, prop) {
+	  if (arr.indexOf) return arr.indexOf(prop)
+	  for (var i = 0, len = arr.length; i < len; i++)
+	    if (arr[i] === prop) return i
+	  return -1
+	}
+
+	function ElementClass(opts) {
+	  if (!(this instanceof ElementClass)) return new ElementClass(opts)
+	  var self = this
+	  if (!opts) opts = {}
+
+	  // similar doing instanceof HTMLElement but works in IE8
+	  if (opts.nodeType) opts = {el: opts}
+
+	  this.opts = opts
+	  this.el = opts.el || document.body
+	  if (typeof this.el !== 'object') this.el = document.querySelector(this.el)
+	}
+
+	ElementClass.prototype.add = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return el.className = className
+	  var classes = el.className.split(' ')
+	  if (indexOf(classes, className) > -1) return classes
+	  classes.push(className)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+
+	ElementClass.prototype.remove = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return
+	  var classes = el.className.split(' ')
+	  var idx = indexOf(classes, className)
+	  if (idx > -1) classes.splice(idx, 1)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+
+	ElementClass.prototype.has = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  var classes = el.className.split(' ')
+	  return indexOf(classes, className) > -1
+	}
+
+	ElementClass.prototype.toggle = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (this.has(className)) this.remove(className)
+	  else this.add(className)
+	}
+
+
+/***/ },
+/* 50 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _reactDom = __webpack_require__(2);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function call_show_method($node, props) {
+	  $node[props.showMethod]({
+	    duration: props.showDuration,
+	    easing: props.showEasing
+	  });
+	}
+
+	exports.default = {
+	  getDefaultProps: function getDefaultProps() {
+	    return {
+	      style: {
+	        display: "none" },
+	      // effective $.hide()
+	      showMethod: "fadeIn", // slideDown, and show are built into jQuery
+	      showDuration: 300,
+	      showEasing: "swing", // and linear are built into jQuery
+	      hideMethod: "fadeOut",
+	      hideDuration: 1000,
+	      hideEasing: "swing",
+	      //
+	      timeOut: 5000,
+	      extendedTimeOut: 1000
+	    };
+	  },
+	  getInitialState: function getInitialState() {
+	    return {
+	      intervalId: null,
+	      isHiding: false
+	    };
+	  },
+	  componentDidMount: function componentDidMount() {
+	    call_show_method(this._get_$_node(), this.props);
+	    if (this.props.timeOut > 0) {
+	      this._set_interval_id(setTimeout(this.hideToast, this.props.timeOut));
+	    }
+	  },
+	  handleMouseEnter: function handleMouseEnter() {
+	    clearTimeout(this.state.intervalId);
+	    this._set_interval_id(null);
+	    this._set_is_hiding(false);
+
+	    call_show_method(this._get_$_node().stop(true, true), this.props);
+	  },
+	  handleMouseLeave: function handleMouseLeave() {
+	    if (!this.state.isHiding && (this.props.timeOut > 0 || this.props.extendedTimeOut > 0)) {
+	      this._set_interval_id(setTimeout(this.hideToast, this.props.extendedTimeOut));
+	    }
+	  },
+	  hideToast: function hideToast(override) {
+	    if (this.state.isHiding || this.state.intervalId === null && !override) {
+	      return;
+	    }
+	    this.setState({ isHiding: true });
+
+	    this._get_$_node()[this.props.hideMethod]({
+	      duration: this.props.hideDuration,
+	      easing: this.props.hideEasing,
+	      complete: this._handle_remove
+	    });
+	  },
+	  _get_$_node: function _get_$_node() {
+	    /* eslint-disable no-undef */
+	    return jQuery(_reactDom2.default.findDOMNode(this));
+	    /* eslint-enable no-undef */
+	  },
+	  _set_interval_id: function _set_interval_id(intervalId) {
+	    this.setState({
+	      intervalId: intervalId
+	    });
+	  },
+	  _set_is_hiding: function _set_is_hiding(isHiding) {
+	    this.setState({
+	      isHiding: isHiding
+	    });
+	  }
+	};
+
+/***/ },
+/* 51 */
+/***/ function(module, exports, __webpack_require__) {
+
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
 	 * @license
 	 * lodash <https://lodash.com/>
@@ -4865,20 +5915,16 @@
 	  var undefined;
 
 	  /** Used as the semantic version number. */
-	  var VERSION = '4.16.2';
+	  var VERSION = '4.15.0';
 
 	  /** Used as the size to enable large array optimizations. */
 	  var LARGE_ARRAY_SIZE = 200;
 
-	  /** Error message constants. */
-	  var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://github.com/es-shims.',
-	      FUNC_ERROR_TEXT = 'Expected a function';
+	  /** Used as the `TypeError` message for "Functions" methods. */
+	  var FUNC_ERROR_TEXT = 'Expected a function';
 
 	  /** Used to stand-in for `undefined` hash values. */
 	  var HASH_UNDEFINED = '__lodash_hash_undefined__';
-
-	  /** Used as the maximum memoize cache size. */
-	  var MAX_MEMOIZE_SIZE = 500;
 
 	  /** Used as the internal argument placeholder. */
 	  var PLACEHOLDER = '__lodash_placeholder__';
@@ -4904,7 +5950,7 @@
 	      DEFAULT_TRUNC_OMISSION = '...';
 
 	  /** Used to detect hot functions by number of calls within a span of milliseconds. */
-	  var HOT_COUNT = 500,
+	  var HOT_COUNT = 150,
 	      HOT_SPAN = 16;
 
 	  /** Used to indicate the type of lazy iteratees. */
@@ -4973,8 +6019,8 @@
 	      reEmptyStringTrailing = /(__e\(.*?\)|\b__t\)) \+\n'';/g;
 
 	  /** Used to match HTML entities and HTML characters. */
-	  var reEscapedHtml = /&(?:amp|lt|gt|quot|#39);/g,
-	      reUnescapedHtml = /[&<>"']/g,
+	  var reEscapedHtml = /&(?:amp|lt|gt|quot|#39|#96);/g,
+	      reUnescapedHtml = /[&<>"'`]/g,
 	      reHasEscapedHtml = RegExp(reEscapedHtml.source),
 	      reHasUnescapedHtml = RegExp(reUnescapedHtml.source);
 
@@ -5020,6 +6066,9 @@
 
 	  /** Used to match `RegExp` flags from their coerced string values. */
 	  var reFlags = /\w*$/;
+
+	  /** Used to detect hexadecimal string values. */
+	  var reHasHexPrefix = /^0x/i;
 
 	  /** Used to detect bad signed hexadecimal string values. */
 	  var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
@@ -5215,7 +6264,7 @@
 	    '\u017a': 'z',  '\u017c': 'z', '\u017e': 'z',
 	    '\u0132': 'IJ', '\u0133': 'ij',
 	    '\u0152': 'Oe', '\u0153': 'oe',
-	    '\u0149': "'n", '\u017f': 's'
+	    '\u0149': "'n", '\u017f': 'ss'
 	  };
 
 	  /** Used to map characters to HTML entities. */
@@ -5224,7 +6273,8 @@
 	    '<': '&lt;',
 	    '>': '&gt;',
 	    '"': '&quot;',
-	    "'": '&#39;'
+	    "'": '&#39;',
+	    '`': '&#96;'
 	  };
 
 	  /** Used to map HTML entities to characters. */
@@ -5233,7 +6283,8 @@
 	    '&lt;': '<',
 	    '&gt;': '>',
 	    '&quot;': '"',
-	    '&#39;': "'"
+	    '&#39;': "'",
+	    '&#96;': '`'
 	  };
 
 	  /** Used to escape characters for inclusion in compiled string literals. */
@@ -5674,9 +6725,18 @@
 	   * @returns {number} Returns the index of the matched value, else `-1`.
 	   */
 	  function baseIndexOf(array, value, fromIndex) {
-	    return value === value
-	      ? strictIndexOf(array, value, fromIndex)
-	      : baseFindIndex(array, baseIsNaN, fromIndex);
+	    if (value !== value) {
+	      return baseFindIndex(array, baseIsNaN, fromIndex);
+	    }
+	    var index = fromIndex - 1,
+	        length = array.length;
+
+	    while (++index < length) {
+	      if (array[index] === value) {
+	        return index;
+	      }
+	    }
+	    return -1;
 	  }
 
 	  /**
@@ -5881,7 +6941,7 @@
 	  }
 
 	  /**
-	   * Checks if a `cache` value for `key` exists.
+	   * Checks if a cache value for `key` exists.
 	   *
 	   * @private
 	   * @param {Object} cache The cache to query.
@@ -5939,7 +6999,7 @@
 
 	    while (length--) {
 	      if (array[length] === placeholder) {
-	        ++result;
+	        result++;
 	      }
 	    }
 	    return result;
@@ -6007,6 +7067,25 @@
 	   */
 	  function hasUnicodeWord(string) {
 	    return reHasUnicodeWord.test(string);
+	  }
+
+	  /**
+	   * Checks if `value` is a host object in IE < 9.
+	   *
+	   * @private
+	   * @param {*} value The value to check.
+	   * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
+	   */
+	  function isHostObject(value) {
+	    // Many host objects are `Object` objects that can coerce to strings
+	    // despite having improperly defined `toString` methods.
+	    var result = false;
+	    if (value != null && typeof value.toString != 'function') {
+	      try {
+	        result = !!(value + '');
+	      } catch (e) {}
+	    }
+	    return result;
 	  }
 
 	  /**
@@ -6117,48 +7196,6 @@
 	  }
 
 	  /**
-	   * A specialized version of `_.indexOf` which performs strict equality
-	   * comparisons of values, i.e. `===`.
-	   *
-	   * @private
-	   * @param {Array} array The array to inspect.
-	   * @param {*} value The value to search for.
-	   * @param {number} fromIndex The index to search from.
-	   * @returns {number} Returns the index of the matched value, else `-1`.
-	   */
-	  function strictIndexOf(array, value, fromIndex) {
-	    var index = fromIndex - 1,
-	        length = array.length;
-
-	    while (++index < length) {
-	      if (array[index] === value) {
-	        return index;
-	      }
-	    }
-	    return -1;
-	  }
-
-	  /**
-	   * A specialized version of `_.lastIndexOf` which performs strict equality
-	   * comparisons of values, i.e. `===`.
-	   *
-	   * @private
-	   * @param {Array} array The array to inspect.
-	   * @param {*} value The value to search for.
-	   * @param {number} fromIndex The index to search from.
-	   * @returns {number} Returns the index of the matched value, else `-1`.
-	   */
-	  function strictLastIndexOf(array, value, fromIndex) {
-	    var index = fromIndex + 1;
-	    while (index--) {
-	      if (array[index] === value) {
-	        return index;
-	      }
-	    }
-	    return index;
-	  }
-
-	  /**
 	   * Gets the number of symbols in `string`.
 	   *
 	   * @private
@@ -6203,7 +7240,7 @@
 	  function unicodeSize(string) {
 	    var result = reUnicode.lastIndex = 0;
 	    while (reUnicode.test(string)) {
-	      ++result;
+	      result++;
 	    }
 	    return result;
 	  }
@@ -6258,10 +7295,17 @@
 	   * lodash.isFunction(lodash.bar);
 	   * // => true
 	   *
+	   * // Use `context` to stub `Date#getTime` use in `_.now`.
+	   * var stubbed = _.runInContext({
+	   *   'Date': function() {
+	   *     return { 'getTime': stubGetTime };
+	   *   }
+	   * });
+	   *
 	   * // Create a suped-up `defer` in Node.js.
 	   * var defer = _.runInContext({ 'setTimeout': setImmediate }).defer;
 	   */
-	  var runInContext = (function runInContext(context) {
+	  function runInContext(context) {
 	    context = context ? _.defaults(root.Object(), context, _.pick(root, contextProps)) : root;
 
 	    /** Built-in constructor references. */
@@ -6321,8 +7365,6 @@
 	    var Buffer = moduleExports ? context.Buffer : undefined,
 	        Symbol = context.Symbol,
 	        Uint8Array = context.Uint8Array,
-	        allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined,
-	        defineProperty = Object.defineProperty,
 	        getPrototype = overArg(Object.getPrototypeOf, Object),
 	        iteratorSymbol = Symbol ? Symbol.iterator : undefined,
 	        objectCreate = Object.create,
@@ -6345,7 +7387,6 @@
 	        nativeKeys = overArg(Object.keys, Object),
 	        nativeMax = Math.max,
 	        nativeMin = Math.min,
-	        nativeNow = Date.now,
 	        nativeParseInt = context.parseInt,
 	        nativeRandom = Math.random,
 	        nativeReverse = arrayProto.reverse;
@@ -6356,11 +7397,21 @@
 	        Promise = getNative(context, 'Promise'),
 	        Set = getNative(context, 'Set'),
 	        WeakMap = getNative(context, 'WeakMap'),
-	        nativeCreate = getNative(Object, 'create'),
-	        nativeDefineProperty = getNative(Object, 'defineProperty');
+	        nativeCreate = getNative(Object, 'create');
+
+	    /* Used to set `toString` methods. */
+	    var defineProperty = (function() {
+	      var func = getNative(Object, 'defineProperty'),
+	          name = getNative.name;
+
+	      return (name && name.length > 2) ? func : undefined;
+	    }());
 
 	    /** Used to store function metadata. */
 	    var metaMap = WeakMap && new WeakMap;
+
+	    /** Detect if properties shadowing those on `Object.prototype` are non-enumerable. */
+	    var nonEnumShadows = !propertyIsEnumerable.call({ 'valueOf': 1 }, 'valueOf');
 
 	    /** Used to lookup unminified function names. */
 	    var realNames = {};
@@ -6507,30 +7558,6 @@
 	      }
 	      return new LodashWrapper(value);
 	    }
-
-	    /**
-	     * The base implementation of `_.create` without support for assigning
-	     * properties to the created object.
-	     *
-	     * @private
-	     * @param {Object} proto The object to inherit from.
-	     * @returns {Object} Returns the new object.
-	     */
-	    var baseCreate = (function() {
-	      function object() {}
-	      return function(proto) {
-	        if (!isObject(proto)) {
-	          return {};
-	        }
-	        if (objectCreate) {
-	          return objectCreate(proto);
-	        }
-	        object.prototype = prototype;
-	        var result = new object;
-	        object.prototype = undefined;
-	        return result;
-	      };
-	    }());
 
 	    /**
 	     * The function whose prototype chain sequence wrappers inherit from.
@@ -6773,7 +7800,6 @@
 	     */
 	    function hashClear() {
 	      this.__data__ = nativeCreate ? nativeCreate(null) : {};
-	      this.size = 0;
 	    }
 
 	    /**
@@ -6787,9 +7813,7 @@
 	     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
 	     */
 	    function hashDelete(key) {
-	      var result = this.has(key) && delete this.__data__[key];
-	      this.size -= result ? 1 : 0;
-	      return result;
+	      return this.has(key) && delete this.__data__[key];
 	    }
 
 	    /**
@@ -6836,7 +7860,6 @@
 	     */
 	    function hashSet(key, value) {
 	      var data = this.__data__;
-	      this.size += this.has(key) ? 0 : 1;
 	      data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
 	      return this;
 	    }
@@ -6877,7 +7900,6 @@
 	     */
 	    function listCacheClear() {
 	      this.__data__ = [];
-	      this.size = 0;
 	    }
 
 	    /**
@@ -6902,7 +7924,6 @@
 	      } else {
 	        splice.call(data, index, 1);
 	      }
-	      --this.size;
 	      return true;
 	    }
 
@@ -6950,7 +7971,6 @@
 	          index = assocIndexOf(data, key);
 
 	      if (index < 0) {
-	        ++this.size;
 	        data.push([key, value]);
 	      } else {
 	        data[index][1] = value;
@@ -6993,7 +8013,6 @@
 	     * @memberOf MapCache
 	     */
 	    function mapCacheClear() {
-	      this.size = 0;
 	      this.__data__ = {
 	        'hash': new Hash,
 	        'map': new (Map || ListCache),
@@ -7011,9 +8030,7 @@
 	     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
 	     */
 	    function mapCacheDelete(key) {
-	      var result = getMapData(this, key)['delete'](key);
-	      this.size -= result ? 1 : 0;
-	      return result;
+	      return getMapData(this, key)['delete'](key);
 	    }
 
 	    /**
@@ -7053,11 +8070,7 @@
 	     * @returns {Object} Returns the map cache instance.
 	     */
 	    function mapCacheSet(key, value) {
-	      var data = getMapData(this, key),
-	          size = data.size;
-
-	      data.set(key, value);
-	      this.size += data.size == size ? 0 : 1;
+	      getMapData(this, key).set(key, value);
 	      return this;
 	    }
 
@@ -7130,8 +8143,7 @@
 	     * @param {Array} [entries] The key-value pairs to cache.
 	     */
 	    function Stack(entries) {
-	      var data = this.__data__ = new ListCache(entries);
-	      this.size = data.size;
+	      this.__data__ = new ListCache(entries);
 	    }
 
 	    /**
@@ -7143,7 +8155,6 @@
 	     */
 	    function stackClear() {
 	      this.__data__ = new ListCache;
-	      this.size = 0;
 	    }
 
 	    /**
@@ -7156,11 +8167,7 @@
 	     * @returns {boolean} Returns `true` if the entry was removed, else `false`.
 	     */
 	    function stackDelete(key) {
-	      var data = this.__data__,
-	          result = data['delete'](key);
-
-	      this.size = data.size;
-	      return result;
+	      return this.__data__['delete'](key);
 	    }
 
 	    /**
@@ -7200,18 +8207,16 @@
 	     * @returns {Object} Returns the stack cache instance.
 	     */
 	    function stackSet(key, value) {
-	      var data = this.__data__;
-	      if (data instanceof ListCache) {
-	        var pairs = data.__data__;
+	      var cache = this.__data__;
+	      if (cache instanceof ListCache) {
+	        var pairs = cache.__data__;
 	        if (!Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
 	          pairs.push([key, value]);
-	          this.size = ++data.size;
 	          return this;
 	        }
-	        data = this.__data__ = new MapCache(pairs);
+	        cache = this.__data__ = new MapCache(pairs);
 	      }
-	      data.set(key, value);
-	      this.size = data.size;
+	      cache.set(key, value);
 	      return this;
 	    }
 
@@ -7252,41 +8257,6 @@
 	    }
 
 	    /**
-	     * A specialized version of `_.sample` for arrays.
-	     *
-	     * @private
-	     * @param {Array} array The array to sample.
-	     * @returns {*} Returns the random element.
-	     */
-	    function arraySample(array) {
-	      var length = array.length;
-	      return length ? array[baseRandom(0, length - 1)] : undefined;
-	    }
-
-	    /**
-	     * A specialized version of `_.sampleSize` for arrays.
-	     *
-	     * @private
-	     * @param {Array} array The array to sample.
-	     * @param {number} n The number of elements to sample.
-	     * @returns {Array} Returns the random elements.
-	     */
-	    function arraySampleSize(array, n) {
-	      return shuffleSelf(copyArray(array), n);
-	    }
-
-	    /**
-	     * A specialized version of `_.shuffle` for arrays.
-	     *
-	     * @private
-	     * @param {Array} array The array to shuffle.
-	     * @returns {Array} Returns the new shuffled array.
-	     */
-	    function arrayShuffle(array) {
-	      return shuffleSelf(copyArray(array));
-	    }
-
-	    /**
 	     * Used by `_.defaults` to customize its `_.assignIn` use.
 	     *
 	     * @private
@@ -7316,7 +8286,7 @@
 	    function assignMergeValue(object, key, value) {
 	      if ((value !== undefined && !eq(object[key], value)) ||
 	          (typeof key == 'number' && value === undefined && !(key in object))) {
-	        baseAssignValue(object, key, value);
+	        object[key] = value;
 	      }
 	    }
 
@@ -7334,7 +8304,7 @@
 	      var objValue = object[key];
 	      if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
 	          (value === undefined && !(key in object))) {
-	        baseAssignValue(object, key, value);
+	        object[key] = value;
 	      }
 	    }
 
@@ -7385,28 +8355,6 @@
 	     */
 	    function baseAssign(object, source) {
 	      return object && copyObject(source, keys(source), object);
-	    }
-
-	    /**
-	     * The base implementation of `assignValue` and `assignMergeValue` without
-	     * value checks.
-	     *
-	     * @private
-	     * @param {Object} object The object to modify.
-	     * @param {string} key The key of the property to assign.
-	     * @param {*} value The value to assign.
-	     */
-	    function baseAssignValue(object, key, value) {
-	      if (key == '__proto__' && defineProperty) {
-	        defineProperty(object, key, {
-	          'configurable': true,
-	          'enumerable': true,
-	          'value': value,
-	          'writable': true
-	        });
-	      } else {
-	        object[key] = value;
-	      }
 	    }
 
 	    /**
@@ -7489,6 +8437,9 @@
 	          return cloneBuffer(value, isDeep);
 	        }
 	        if (tag == objectTag || tag == argsTag || (isFunc && !object)) {
+	          if (isHostObject(value)) {
+	            return object ? value : {};
+	          }
 	          result = initCloneObject(isFunc ? {} : value);
 	          if (!isDeep) {
 	            return copySymbols(value, baseAssign(result, value));
@@ -7560,6 +8511,18 @@
 	        }
 	      }
 	      return true;
+	    }
+
+	    /**
+	     * The base implementation of `_.create` without support for assigning
+	     * properties to the created object.
+	     *
+	     * @private
+	     * @param {Object} prototype The object to inherit from.
+	     * @returns {Object} Returns the new object.
+	     */
+	    function baseCreate(proto) {
+	      return isObject(proto) ? objectCreate(proto) : {};
 	    }
 
 	    /**
@@ -8120,8 +9083,8 @@
 	        othTag = getTag(other);
 	        othTag = othTag == argsTag ? objectTag : othTag;
 	      }
-	      var objIsObj = objTag == objectTag,
-	          othIsObj = othTag == objectTag,
+	      var objIsObj = objTag == objectTag && !isHostObject(object),
+	          othIsObj = othTag == objectTag && !isHostObject(other),
 	          isSameTag = objTag == othTag;
 
 	      if (isSameTag && !objIsObj) {
@@ -8226,7 +9189,7 @@
 	      if (!isObject(value) || isMasked(value)) {
 	        return false;
 	      }
-	      var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+	      var pattern = (isFunction(value) || isHostObject(value)) ? reIsNative : reIsHostCtor;
 	      return pattern.test(toSource(value));
 	    }
 
@@ -8584,7 +9547,7 @@
 	            value = object[key];
 
 	        if (predicate(value, key)) {
-	          baseAssignValue(result, key, value);
+	          result[key] = value;
 	        }
 	      }
 	      return result;
@@ -8750,30 +9713,24 @@
 	     * @returns {Function} Returns the new function.
 	     */
 	    function baseRest(func, start) {
-	      return setToString(overRest(func, start, identity), func + '');
-	    }
+	      start = nativeMax(start === undefined ? (func.length - 1) : start, 0);
+	      return function() {
+	        var args = arguments,
+	            index = -1,
+	            length = nativeMax(args.length - start, 0),
+	            array = Array(length);
 
-	    /**
-	     * The base implementation of `_.sample`.
-	     *
-	     * @private
-	     * @param {Array|Object} collection The collection to sample.
-	     * @returns {*} Returns the random element.
-	     */
-	    function baseSample(collection) {
-	      return arraySample(values(collection));
-	    }
-
-	    /**
-	     * The base implementation of `_.sampleSize` without param guards.
-	     *
-	     * @private
-	     * @param {Array|Object} collection The collection to sample.
-	     * @param {number} n The number of elements to sample.
-	     * @returns {Array} Returns the random elements.
-	     */
-	    function baseSampleSize(collection, n) {
-	      return shuffleSelf(values(collection), n);
+	        while (++index < length) {
+	          array[index] = args[start + index];
+	        }
+	        index = -1;
+	        var otherArgs = Array(start + 1);
+	        while (++index < start) {
+	          otherArgs[index] = args[index];
+	        }
+	        otherArgs[start] = array;
+	        return apply(func, this, otherArgs);
+	      };
 	    }
 
 	    /**
@@ -8817,7 +9774,7 @@
 	    }
 
 	    /**
-	     * The base implementation of `setData` without support for hot loop shorting.
+	     * The base implementation of `setData` without support for hot loop detection.
 	     *
 	     * @private
 	     * @param {Function} func The function to associate metadata with.
@@ -8828,34 +9785,6 @@
 	      metaMap.set(func, data);
 	      return func;
 	    };
-
-	    /**
-	     * The base implementation of `setToString` without support for hot loop shorting.
-	     *
-	     * @private
-	     * @param {Function} func The function to modify.
-	     * @param {Function} string The `toString` result.
-	     * @returns {Function} Returns `func`.
-	     */
-	    var baseSetToString = !nativeDefineProperty ? identity : function(func, string) {
-	      return nativeDefineProperty(func, 'toString', {
-	        'configurable': true,
-	        'enumerable': false,
-	        'value': constant(string),
-	        'writable': true
-	      });
-	    };
-
-	    /**
-	     * The base implementation of `_.shuffle`.
-	     *
-	     * @private
-	     * @param {Array|Object} collection The collection to shuffle.
-	     * @returns {Array} Returns the new shuffled array.
-	     */
-	    function baseShuffle(collection) {
-	      return shuffleSelf(values(collection));
-	    }
 
 	    /**
 	     * The base implementation of `_.slice` without an iteratee call guard.
@@ -9272,17 +10201,6 @@
 	    }
 
 	    /**
-	     * A `baseRest` alias which can be replaced with `identity` by module
-	     * replacement plugins.
-	     *
-	     * @private
-	     * @type {Function}
-	     * @param {Function} func The function to apply a rest parameter to.
-	     * @returns {Function} Returns the new function.
-	     */
-	    var castRest = baseRest;
-
-	    /**
 	     * Casts `array` to a slice if it's needed.
 	     *
 	     * @private
@@ -9319,9 +10237,7 @@
 	      if (isDeep) {
 	        return buffer.slice();
 	      }
-	      var length = buffer.length,
-	          result = allocUnsafe ? allocUnsafe(length) : new buffer.constructor(length);
-
+	      var result = new buffer.constructor(buffer.length);
 	      buffer.copy(result);
 	      return result;
 	    }
@@ -9598,7 +10514,6 @@
 	     * @returns {Object} Returns `object`.
 	     */
 	    function copyObject(source, props, object, customizer) {
-	      var isNew = !object;
 	      object || (object = {});
 
 	      var index = -1,
@@ -9611,14 +10526,7 @@
 	          ? customizer(object[key], source[key], key, object, source)
 	          : undefined;
 
-	        if (newValue === undefined) {
-	          newValue = source[key];
-	        }
-	        if (isNew) {
-	          baseAssignValue(object, key, newValue);
-	        } else {
-	          assignValue(object, key, newValue);
-	        }
+	        assignValue(object, key, newValue === undefined ? source[key] : newValue);
 	      }
 	      return object;
 	    }
@@ -9897,7 +10805,9 @@
 	     * @returns {Function} Returns the new flow function.
 	     */
 	    function createFlow(fromRight) {
-	      return flatRest(function(funcs) {
+	      return baseRest(function(funcs) {
+	        funcs = baseFlatten(funcs, 1);
+
 	        var length = funcs.length,
 	            index = length,
 	            prereq = LodashWrapper.prototype.thru;
@@ -10080,8 +10990,11 @@
 	     * @returns {Function} Returns the new over function.
 	     */
 	    function createOver(arrayFunc) {
-	      return flatRest(function(iteratees) {
-	        iteratees = arrayMap(iteratees, baseUnary(getIteratee()));
+	      return baseRest(function(iteratees) {
+	        iteratees = (iteratees.length == 1 && isArray(iteratees[0]))
+	          ? arrayMap(iteratees[0], baseUnary(getIteratee()))
+	          : arrayMap(baseFlatten(iteratees, 1), baseUnary(getIteratee()));
+
 	        return baseRest(function(args) {
 	          var thisArg = this;
 	          return arrayFunc(iteratees, function(iteratee) {
@@ -10424,9 +11337,9 @@
 	        // Recursively compare arrays (susceptible to call stack limits).
 	        if (seen) {
 	          if (!arraySome(other, function(othValue, othIndex) {
-	                if (!cacheHas(seen, othIndex) &&
+	                if (!seen.has(othIndex) &&
 	                    (arrValue === othValue || equalFunc(arrValue, othValue, customizer, bitmask, stack))) {
-	                  return seen.push(othIndex);
+	                  return seen.add(othIndex);
 	                }
 	              })) {
 	            result = false;
@@ -10607,17 +11520,6 @@
 	    }
 
 	    /**
-	     * A specialized version of `baseRest` which flattens the rest array.
-	     *
-	     * @private
-	     * @param {Function} func The function to apply a rest parameter to.
-	     * @returns {Function} Returns the new function.
-	     */
-	    function flatRest(func) {
-	      return setToString(overRest(func, undefined, flatten), func + '');
-	    }
-
-	    /**
 	     * Creates an array of own enumerable property names and symbols of `object`.
 	     *
 	     * @private
@@ -10785,7 +11687,8 @@
 	     */
 	    var getTag = baseGetTag;
 
-	    // Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
+	    // Fallback for data views, maps, sets, and weak maps in IE 11,
+	    // for data views in Edge < 14, and promises in Node.js.
 	    if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag) ||
 	        (Map && getTag(new Map) != mapTag) ||
 	        (Promise && getTag(Promise.resolve()) != promiseTag) ||
@@ -10861,9 +11764,9 @@
 	    function hasPath(object, path, hasFunc) {
 	      path = isKey(path, object) ? [path] : castPath(path);
 
-	      var index = -1,
-	          length = path.length,
-	          result = false;
+	      var result,
+	          index = -1,
+	          length = path.length;
 
 	      while (++index < length) {
 	        var key = toKey(path[index]);
@@ -10872,10 +11775,10 @@
 	        }
 	        object = object[key];
 	      }
-	      if (result || ++index != length) {
+	      if (result) {
 	        return result;
 	      }
-	      length = object ? object.length : 0;
+	      var length = object ? object.length : 0;
 	      return !!length && isLength(length) && isIndex(key, length) &&
 	        (isArray(object) || isArguments(object));
 	    }
@@ -10970,11 +11873,9 @@
 	     * @returns {string} Returns the modified source.
 	     */
 	    function insertWrapDetails(source, details) {
-	      var length = details.length;
-	      if (!length) {
-	        return source;
-	      }
-	      var lastIndex = length - 1;
+	      var length = details.length,
+	          lastIndex = length - 1;
+
 	      details[lastIndex] = (length > 1 ? '& ' : '') + details[lastIndex];
 	      details = details.join(length > 2 ? ', ' : ' ');
 	      return source.replace(reWrapComment, '{\n/* [wrapped with ' + details + '] */\n');
@@ -11154,26 +12055,6 @@
 	    }
 
 	    /**
-	     * A specialized version of `_.memoize` which clears the memoized function's
-	     * cache when it exceeds `MAX_MEMOIZE_SIZE`.
-	     *
-	     * @private
-	     * @param {Function} func The function to have its output memoized.
-	     * @returns {Function} Returns the new memoized function.
-	     */
-	    function memoizeCapped(func) {
-	      var result = memoize(func, function(key) {
-	        if (cache.size === MAX_MEMOIZE_SIZE) {
-	          cache.clear();
-	        }
-	        return key;
-	      });
-
-	      var cache = result.cache;
-	      return result;
-	    }
-
-	    /**
 	     * Merges the function metadata of `source` into `data`.
 	     *
 	     * Merging metadata reduces the number of wrappers used to invoke a function.
@@ -11287,36 +12168,6 @@
 	    }
 
 	    /**
-	     * A specialized version of `baseRest` which transforms the rest array.
-	     *
-	     * @private
-	     * @param {Function} func The function to apply a rest parameter to.
-	     * @param {number} [start=func.length-1] The start position of the rest parameter.
-	     * @param {Function} transform The rest array transform.
-	     * @returns {Function} Returns the new function.
-	     */
-	    function overRest(func, start, transform) {
-	      start = nativeMax(start === undefined ? (func.length - 1) : start, 0);
-	      return function() {
-	        var args = arguments,
-	            index = -1,
-	            length = nativeMax(args.length - start, 0),
-	            array = Array(length);
-
-	        while (++index < length) {
-	          array[index] = args[start + index];
-	        }
-	        index = -1;
-	        var otherArgs = Array(start + 1);
-	        while (++index < start) {
-	          otherArgs[index] = args[index];
-	        }
-	        otherArgs[start] = transform(array);
-	        return apply(func, this, otherArgs);
-	      };
-	    }
-
-	    /**
 	     * Gets the parent value at `path` of `object`.
 	     *
 	     * @private
@@ -11364,7 +12215,25 @@
 	     * @param {*} data The metadata.
 	     * @returns {Function} Returns `func`.
 	     */
-	    var setData = shortOut(baseSetData);
+	    var setData = (function() {
+	      var count = 0,
+	          lastCalled = 0;
+
+	      return function(key, value) {
+	        var stamp = now(),
+	            remaining = HOT_SPAN - (stamp - lastCalled);
+
+	        lastCalled = stamp;
+	        if (remaining > 0) {
+	          if (++count >= HOT_COUNT) {
+	            return key;
+	          }
+	        } else {
+	          count = 0;
+	        }
+	        return baseSetData(key, value);
+	      };
+	    }());
 
 	    /**
 	     * A simple wrapper around the global [`setTimeout`](https://mdn.io/setTimeout).
@@ -11379,16 +12248,6 @@
 	    };
 
 	    /**
-	     * Sets the `toString` method of `func` to return `string`.
-	     *
-	     * @private
-	     * @param {Function} func The function to modify.
-	     * @param {Function} string The `toString` result.
-	     * @returns {Function} Returns `func`.
-	     */
-	    var setToString = shortOut(baseSetToString);
-
-	    /**
 	     * Sets the `toString` method of `wrapper` to mimic the source of `reference`
 	     * with wrapper details in a comment at the top of the source body.
 	     *
@@ -11398,64 +12257,14 @@
 	     * @param {number} bitmask The bitmask flags. See `createWrap` for more details.
 	     * @returns {Function} Returns `wrapper`.
 	     */
-	    function setWrapToString(wrapper, reference, bitmask) {
+	    var setWrapToString = !defineProperty ? identity : function(wrapper, reference, bitmask) {
 	      var source = (reference + '');
-	      return setToString(wrapper, insertWrapDetails(source, updateWrapDetails(getWrapDetails(source), bitmask)));
-	    }
-
-	    /**
-	     * Creates a function that'll short out and invoke `identity` instead
-	     * of `func` when it's called `HOT_COUNT` or more times in `HOT_SPAN`
-	     * milliseconds.
-	     *
-	     * @private
-	     * @param {Function} func The function to restrict.
-	     * @returns {Function} Returns the new shortable function.
-	     */
-	    function shortOut(func) {
-	      var count = 0,
-	          lastCalled = 0;
-
-	      return function() {
-	        var stamp = nativeNow(),
-	            remaining = HOT_SPAN - (stamp - lastCalled);
-
-	        lastCalled = stamp;
-	        if (remaining > 0) {
-	          if (++count >= HOT_COUNT) {
-	            return arguments[0];
-	          }
-	        } else {
-	          count = 0;
-	        }
-	        return func.apply(undefined, arguments);
-	      };
-	    }
-
-	    /**
-	     * A specialized version of `_.shuffle` which mutates and sets the size of `array`.
-	     *
-	     * @private
-	     * @param {Array} array The array to shuffle.
-	     * @param {number} [size=array.length] The size of `array`.
-	     * @returns {Array} Returns `array`.
-	     */
-	    function shuffleSelf(array, size) {
-	      var index = -1,
-	          length = array.length,
-	          lastIndex = length - 1;
-
-	      size = size === undefined ? length : baseClamp(size, 0, length);
-	      while (++index < size) {
-	        var rand = baseRandom(index, lastIndex),
-	            value = array[rand];
-
-	        array[rand] = array[index];
-	        array[index] = value;
-	      }
-	      array.length = size;
-	      return array;
-	    }
+	      return defineProperty(wrapper, 'toString', {
+	        'configurable': true,
+	        'enumerable': false,
+	        'value': constant(insertWrapDetails(source, updateWrapDetails(getWrapDetails(source), bitmask)))
+	      });
+	    };
 
 	    /**
 	     * Converts `string` to a property path array.
@@ -11464,7 +12273,7 @@
 	     * @param {string} string The string to convert.
 	     * @returns {Array} Returns the property path array.
 	     */
-	    var stringToPath = memoizeCapped(function(string) {
+	    var stringToPath = memoize(function(string) {
 	      string = toString(string);
 
 	      var result = [];
@@ -11643,25 +12452,24 @@
 	     * // => [1]
 	     */
 	    function concat() {
-	      var length = arguments.length;
-	      if (!length) {
-	        return [];
-	      }
-	      var args = Array(length - 1),
+	      var length = arguments.length,
+	          args = Array(length ? length - 1 : 0),
 	          array = arguments[0],
 	          index = length;
 
 	      while (index--) {
 	        args[index - 1] = arguments[index];
 	      }
-	      return arrayPush(isArray(array) ? copyArray(array) : [array], baseFlatten(args, 1));
+	      return length
+	        ? arrayPush(isArray(array) ? copyArray(array) : [array], baseFlatten(args, 1))
+	        : [];
 	    }
 
 	    /**
 	     * Creates an array of `array` values not included in the other given arrays
 	     * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
-	     * for equality comparisons. The order and references of result values are
-	     * determined by the first array.
+	     * for equality comparisons. The order of result values is determined by the
+	     * order they occur in the first array.
 	     *
 	     * **Note:** Unlike `_.pullAll`, this method returns a new array.
 	     *
@@ -11687,9 +12495,8 @@
 	    /**
 	     * This method is like `_.difference` except that it accepts `iteratee` which
 	     * is invoked for each element of `array` and `values` to generate the criterion
-	     * by which they're compared. The order and references of result values are
-	     * determined by the first array. The iteratee is invoked with one argument:
-	     * (value).
+	     * by which they're compared. Result values are chosen from the first array.
+	     * The iteratee is invoked with one argument: (value).
 	     *
 	     * **Note:** Unlike `_.pullAllBy`, this method returns a new array.
 	     *
@@ -11722,9 +12529,9 @@
 
 	    /**
 	     * This method is like `_.difference` except that it accepts `comparator`
-	     * which is invoked to compare elements of `array` to `values`. The order and
-	     * references of result values are determined by the first array. The comparator
-	     * is invoked with two arguments: (arrVal, othVal).
+	     * which is invoked to compare elements of `array` to `values`. Result values
+	     * are chosen from the first array. The comparator is invoked with two arguments:
+	     * (arrVal, othVal).
 	     *
 	     * **Note:** Unlike `_.pullAllWith`, this method returns a new array.
 	     *
@@ -12218,8 +13025,8 @@
 	    /**
 	     * Creates an array of unique values that are included in all given arrays
 	     * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
-	     * for equality comparisons. The order and references of result values are
-	     * determined by the first array.
+	     * for equality comparisons. The order of result values is determined by the
+	     * order they occur in the first array.
 	     *
 	     * @static
 	     * @memberOf _
@@ -12242,9 +13049,8 @@
 	    /**
 	     * This method is like `_.intersection` except that it accepts `iteratee`
 	     * which is invoked for each element of each `arrays` to generate the criterion
-	     * by which they're compared. The order and references of result values are
-	     * determined by the first array. The iteratee is invoked with one argument:
-	     * (value).
+	     * by which they're compared. Result values are chosen from the first array.
+	     * The iteratee is invoked with one argument: (value).
 	     *
 	     * @static
 	     * @memberOf _
@@ -12278,9 +13084,9 @@
 
 	    /**
 	     * This method is like `_.intersection` except that it accepts `comparator`
-	     * which is invoked to compare elements of `arrays`. The order and references
-	     * of result values are determined by the first array. The comparator is
-	     * invoked with two arguments: (arrVal, othVal).
+	     * which is invoked to compare elements of `arrays`. Result values are chosen
+	     * from the first array. The comparator is invoked with two arguments:
+	     * (arrVal, othVal).
 	     *
 	     * @static
 	     * @memberOf _
@@ -12378,11 +13184,21 @@
 	      var index = length;
 	      if (fromIndex !== undefined) {
 	        index = toInteger(fromIndex);
-	        index = index < 0 ? nativeMax(length + index, 0) : nativeMin(index, length - 1);
+	        index = (
+	          index < 0
+	            ? nativeMax(length + index, 0)
+	            : nativeMin(index, length - 1)
+	        ) + 1;
 	      }
-	      return value === value
-	        ? strictLastIndexOf(array, value, index)
-	        : baseFindIndex(array, baseIsNaN, index, true);
+	      if (value !== value) {
+	        return baseFindIndex(array, baseIsNaN, index - 1, true);
+	      }
+	      while (index--) {
+	        if (array[index] === value) {
+	          return index;
+	        }
+	      }
+	      return -1;
 	    }
 
 	    /**
@@ -12544,7 +13360,9 @@
 	     * console.log(pulled);
 	     * // => ['b', 'd']
 	     */
-	    var pullAt = flatRest(function(array, indexes) {
+	    var pullAt = baseRest(function(array, indexes) {
+	      indexes = baseFlatten(indexes, 1);
+
 	      var length = array ? array.length : 0,
 	          result = baseAt(array, indexes);
 
@@ -13119,9 +13937,8 @@
 	    /**
 	     * Creates a duplicate-free version of an array, using
 	     * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
-	     * for equality comparisons, in which only the first occurrence of each element
-	     * is kept. The order of result values is determined by the order they occur
-	     * in the array.
+	     * for equality comparisons, in which only the first occurrence of each
+	     * element is kept.
 	     *
 	     * @static
 	     * @memberOf _
@@ -13143,9 +13960,7 @@
 	    /**
 	     * This method is like `_.uniq` except that it accepts `iteratee` which is
 	     * invoked for each element in `array` to generate the criterion by which
-	     * uniqueness is computed. The order of result values is determined by the
-	     * order they occur in the array. The iteratee is invoked with one argument:
-	     * (value).
+	     * uniqueness is computed. The iteratee is invoked with one argument: (value).
 	     *
 	     * @static
 	     * @memberOf _
@@ -13172,9 +13987,8 @@
 
 	    /**
 	     * This method is like `_.uniq` except that it accepts `comparator` which
-	     * is invoked to compare elements of `array`. The order of result values is
-	     * determined by the order they occur in the array.The comparator is invoked
-	     * with two arguments: (arrVal, othVal).
+	     * is invoked to compare elements of `array`. The comparator is invoked with
+	     * two arguments: (arrVal, othVal).
 	     *
 	     * @static
 	     * @memberOf _
@@ -13316,9 +14130,8 @@
 	    /**
 	     * This method is like `_.xor` except that it accepts `iteratee` which is
 	     * invoked for each element of each `arrays` to generate the criterion by
-	     * which by which they're compared. The order of result values is determined
-	     * by the order they occur in the arrays. The iteratee is invoked with one
-	     * argument: (value).
+	     * which by which they're compared. The iteratee is invoked with one argument:
+	     * (value).
 	     *
 	     * @static
 	     * @memberOf _
@@ -13347,9 +14160,8 @@
 
 	    /**
 	     * This method is like `_.xor` except that it accepts `comparator` which is
-	     * invoked to compare elements of `arrays`. The order of result values is
-	     * determined by the order they occur in the arrays. The comparator is invoked
-	     * with two arguments: (arrVal, othVal).
+	     * invoked to compare elements of `arrays`. The comparator is invoked with
+	     * two arguments: (arrVal, othVal).
 	     *
 	     * @static
 	     * @memberOf _
@@ -13566,7 +14378,8 @@
 	     * _(object).at(['a[0].b.c', 'a[1]']).value();
 	     * // => [3, 4]
 	     */
-	    var wrapperAt = flatRest(function(paths) {
+	    var wrapperAt = baseRest(function(paths) {
+	      paths = baseFlatten(paths, 1);
 	      var length = paths.length,
 	          start = length ? paths[0] : 0,
 	          value = this.__wrapped__,
@@ -13831,11 +14644,7 @@
 	     * // => { '3': 2, '5': 1 }
 	     */
 	    var countBy = createAggregator(function(result, value, key) {
-	      if (hasOwnProperty.call(result, key)) {
-	        ++result[key];
-	      } else {
-	        baseAssignValue(result, key, 1);
-	      }
+	      hasOwnProperty.call(result, key) ? ++result[key] : (result[key] = 1);
 	    });
 
 	    /**
@@ -14090,7 +14899,7 @@
 	     * @see _.forEachRight
 	     * @example
 	     *
-	     * _.forEach([1, 2], function(value) {
+	     * _([1, 2]).forEach(function(value) {
 	     *   console.log(value);
 	     * });
 	     * // => Logs `1` then `2`.
@@ -14158,7 +14967,7 @@
 	      if (hasOwnProperty.call(result, key)) {
 	        result[key].push(value);
 	      } else {
-	        baseAssignValue(result, key, [value]);
+	        result[key] = [value];
 	      }
 	    });
 
@@ -14271,7 +15080,7 @@
 	     * // => { 'left': { 'dir': 'left', 'code': 97 }, 'right': { 'dir': 'right', 'code': 100 } }
 	     */
 	    var keyBy = createAggregator(function(result, value, key) {
-	      baseAssignValue(result, key, value);
+	      result[key] = value;
 	    });
 
 	    /**
@@ -14531,8 +15340,10 @@
 	     * // => 2
 	     */
 	    function sample(collection) {
-	      var func = isArray(collection) ? arraySample : baseSample;
-	      return func(collection);
+	      var array = isArrayLike(collection) ? collection : values(collection),
+	          length = array.length;
+
+	      return length > 0 ? array[baseRandom(0, length - 1)] : undefined;
 	    }
 
 	    /**
@@ -14556,13 +15367,25 @@
 	     * // => [2, 3, 1]
 	     */
 	    function sampleSize(collection, n, guard) {
+	      var index = -1,
+	          result = toArray(collection),
+	          length = result.length,
+	          lastIndex = length - 1;
+
 	      if ((guard ? isIterateeCall(collection, n, guard) : n === undefined)) {
 	        n = 1;
 	      } else {
-	        n = toInteger(n);
+	        n = baseClamp(toInteger(n), 0, length);
 	      }
-	      var func = isArray(collection) ? arraySampleSize : baseSampleSize;
-	      return func(collection, n);
+	      while (++index < n) {
+	        var rand = baseRandom(index, lastIndex),
+	            value = result[rand];
+
+	        result[rand] = result[index];
+	        result[index] = value;
+	      }
+	      result.length = n;
+	      return result;
 	    }
 
 	    /**
@@ -14581,8 +15404,7 @@
 	     * // => [4, 1, 3, 2]
 	     */
 	    function shuffle(collection) {
-	      var func = isArray(collection) ? arrayShuffle : baseShuffle;
-	      return func(collection);
+	      return sampleSize(collection, MAX_ARRAY_LENGTH);
 	    }
 
 	    /**
@@ -14687,11 +15509,16 @@
 	     *   { 'user': 'barney', 'age': 34 }
 	     * ];
 	     *
-	     * _.sortBy(users, [function(o) { return o.user; }]);
+	     * _.sortBy(users, function(o) { return o.user; });
 	     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
 	     *
 	     * _.sortBy(users, ['user', 'age']);
 	     * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
+	     *
+	     * _.sortBy(users, 'user', function(o) {
+	     *   return Math.floor(o.age / 10);
+	     * });
+	     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
 	     */
 	    var sortBy = baseRest(function(collection, iteratees) {
 	      if (collection == null) {
@@ -15206,7 +16033,7 @@
 	     * _.defer(function(text) {
 	     *   console.log(text);
 	     * }, 'deferred');
-	     * // => Logs 'deferred' after one millisecond.
+	     * // => Logs 'deferred' after one or more milliseconds.
 	     */
 	    var defer = baseRest(function(func, args) {
 	      return baseDelay(func, 1, args);
@@ -15314,14 +16141,14 @@
 	          return cache.get(key);
 	        }
 	        var result = func.apply(this, args);
-	        memoized.cache = cache.set(key, result) || cache;
+	        memoized.cache = cache.set(key, result);
 	        return result;
 	      };
 	      memoized.cache = new (memoize.Cache || MapCache);
 	      return memoized;
 	    }
 
-	    // Expose `MapCache`.
+	    // Assign cache to `_.memoize`.
 	    memoize.Cache = MapCache;
 
 	    /**
@@ -15413,7 +16240,7 @@
 	     * func(10, 5);
 	     * // => [100, 10]
 	     */
-	    var overArgs = castRest(function(func, transforms) {
+	    var overArgs = baseRest(function(func, transforms) {
 	      transforms = (transforms.length == 1 && isArray(transforms[0]))
 	        ? arrayMap(transforms[0], baseUnary(getIteratee()))
 	        : arrayMap(baseFlatten(transforms, 1), baseUnary(getIteratee()));
@@ -15527,8 +16354,8 @@
 	     * rearged('b', 'c', 'a')
 	     * // => ['a', 'b', 'c']
 	     */
-	    var rearg = flatRest(function(func, indexes) {
-	      return createWrap(func, REARG_FLAG, undefined, undefined, undefined, indexes);
+	    var rearg = baseRest(function(func, indexes) {
+	      return createWrap(func, REARG_FLAG, undefined, undefined, undefined, baseFlatten(indexes, 1));
 	    });
 
 	    /**
@@ -16204,7 +17031,7 @@
 	     * // => false
 	     */
 	    function isElement(value) {
-	      return value != null && value.nodeType === 1 && isObjectLike(value) && !isPlainObject(value);
+	      return !!value && value.nodeType === 1 && isObjectLike(value) && !isPlainObject(value);
 	    }
 
 	    /**
@@ -16250,7 +17077,7 @@
 	      if (tag == mapTag || tag == setTag) {
 	        return !value.size;
 	      }
-	      if (isPrototype(value)) {
+	      if (nonEnumShadows || isPrototype(value)) {
 	        return !nativeKeys(value).length;
 	      }
 	      for (var key in value) {
@@ -16499,7 +17326,7 @@
 	     */
 	    function isObject(value) {
 	      var type = typeof value;
-	      return value != null && (type == 'object' || type == 'function');
+	      return !!value && (type == 'object' || type == 'function');
 	    }
 
 	    /**
@@ -16527,7 +17354,7 @@
 	     * // => false
 	     */
 	    function isObjectLike(value) {
-	      return value != null && typeof value == 'object';
+	      return !!value && typeof value == 'object';
 	    }
 
 	    /**
@@ -16681,7 +17508,7 @@
 	     */
 	    function isNative(value) {
 	      if (isMaskable(value)) {
-	        throw new Error(CORE_ERROR_TEXT);
+	        throw new Error('This method is not supported with core-js. Try https://github.com/es-shims.');
 	      }
 	      return baseIsNative(value);
 	    }
@@ -16791,7 +17618,8 @@
 	     * // => true
 	     */
 	    function isPlainObject(value) {
-	      if (!isObjectLike(value) || objectToString.call(value) != objectTag) {
+	      if (!isObjectLike(value) ||
+	          objectToString.call(value) != objectTag || isHostObject(value)) {
 	        return false;
 	      }
 	      var proto = getPrototype(value);
@@ -17348,7 +18176,7 @@
 	     * // => { 'a': 1, 'c': 3 }
 	     */
 	    var assign = createAssigner(function(object, source) {
-	      if (isPrototype(source) || isArrayLike(source)) {
+	      if (nonEnumShadows || isPrototype(source) || isArrayLike(source)) {
 	        copyObject(source, keys(source), object);
 	        return;
 	      }
@@ -17476,7 +18304,9 @@
 	     * _.at(object, ['a[0].b.c', 'a[1]']);
 	     * // => [3, 4]
 	     */
-	    var at = flatRest(baseAt);
+	    var at = baseRest(function(object, paths) {
+	      return baseAt(object, baseFlatten(paths, 1));
+	    });
 
 	    /**
 	     * Creates an object that inherits from the `prototype` object. If a
@@ -18079,7 +18909,7 @@
 	      iteratee = getIteratee(iteratee, 3);
 
 	      baseForOwn(object, function(value, key, object) {
-	        baseAssignValue(result, iteratee(value, key, object), value);
+	        result[iteratee(value, key, object)] = value;
 	      });
 	      return result;
 	    }
@@ -18117,7 +18947,7 @@
 	      iteratee = getIteratee(iteratee, 3);
 
 	      baseForOwn(object, function(value, key, object) {
-	        baseAssignValue(result, key, iteratee(value, key, object));
+	        result[key] = iteratee(value, key, object);
 	      });
 	      return result;
 	    }
@@ -18161,7 +18991,7 @@
 	     * This method is like `_.merge` except that it accepts `customizer` which
 	     * is invoked to produce the merged values of the destination and source
 	     * properties. If `customizer` returns `undefined`, merging is handled by the
-	     * method instead. The `customizer` is invoked with six arguments:
+	     * method instead. The `customizer` is invoked with seven arguments:
 	     * (objValue, srcValue, key, object, source, stack).
 	     *
 	     * **Note:** This method mutates `object`.
@@ -18211,11 +19041,11 @@
 	     * _.omit(object, ['a', 'c']);
 	     * // => { 'b': '2' }
 	     */
-	    var omit = flatRest(function(object, props) {
+	    var omit = baseRest(function(object, props) {
 	      if (object == null) {
 	        return {};
 	      }
-	      props = arrayMap(props, toKey);
+	      props = arrayMap(baseFlatten(props, 1), toKey);
 	      return basePick(object, baseDifference(getAllKeysIn(object), props));
 	    });
 
@@ -18260,8 +19090,8 @@
 	     * _.pick(object, ['a', 'c']);
 	     * // => { 'a': 1, 'c': 3 }
 	     */
-	    var pick = flatRest(function(object, props) {
-	      return object == null ? {} : basePick(object, arrayMap(props, toKey));
+	    var pick = baseRest(function(object, props) {
+	      return object == null ? {} : basePick(object, arrayMap(baseFlatten(props, 1), toKey));
 	    });
 
 	    /**
@@ -18915,8 +19745,8 @@
 	    }
 
 	    /**
-	     * Converts the characters "&", "<", ">", '"', and "'" in `string` to their
-	     * corresponding HTML entities.
+	     * Converts the characters "&", "<", ">", '"', "'", and "\`" in `string` to
+	     * their corresponding HTML entities.
 	     *
 	     * **Note:** No other characters are escaped. To escape additional
 	     * characters use a third-party library like [_he_](https://mths.be/he).
@@ -18926,6 +19756,12 @@
 	     * unless they're part of a tag or unquoted attribute value. See
 	     * [Mathias Bynens's article](https://mathiasbynens.be/notes/ambiguous-ampersands)
 	     * (under "semi-related fun fact") for more details.
+	     *
+	     * Backticks are escaped because in IE < 9, they can break out of
+	     * attribute values or HTML comments. See [#59](https://html5sec.org/#59),
+	     * [#102](https://html5sec.org/#102), [#108](https://html5sec.org/#108), and
+	     * [#133](https://html5sec.org/#133) of the
+	     * [HTML5 Security Cheatsheet](https://html5sec.org/) for more details.
 	     *
 	     * When working with HTML you should always
 	     * [quote attribute values](http://wonko.com/post/html-escaping) to reduce
@@ -19169,12 +20005,15 @@
 	     * // => [6, 8, 10]
 	     */
 	    function parseInt(string, radix, guard) {
+	      // Chrome fails to trim leading <BOM> whitespace characters.
+	      // See https://bugs.chromium.org/p/v8/issues/detail?id=3109 for more details.
 	      if (guard || radix == null) {
 	        radix = 0;
 	      } else if (radix) {
 	        radix = +radix;
 	      }
-	      return nativeParseInt(toString(string).replace(reTrimStart, ''), radix || 0);
+	      string = toString(string).replace(reTrim, '');
+	      return nativeParseInt(string, radix || (reHasHexPrefix.test(string) ? 16 : 10));
 	    }
 
 	    /**
@@ -19413,8 +20252,7 @@
 	     * compiled({ 'user': 'barney' });
 	     * // => 'hello barney!'
 	     *
-	     * // Use the ES template literal delimiter as an "interpolate" delimiter.
-	     * // Disable support by replacing the "interpolate" delimiter.
+	     * // Use the ES delimiter as an alternative to the default "interpolate" delimiter.
 	     * var compiled = _.template('hello ${ user }!');
 	     * compiled({ 'user': 'pebbles' });
 	     * // => 'hello pebbles!'
@@ -19815,7 +20653,7 @@
 
 	    /**
 	     * The inverse of `_.escape`; this method converts the HTML entities
-	     * `&amp;`, `&lt;`, `&gt;`, `&quot;`, and `&#39;` in `string` to
+	     * `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, and `&#96;` in `string` to
 	     * their corresponding characters.
 	     *
 	     * **Note:** No other HTML entities are unescaped. To unescape additional
@@ -19969,10 +20807,10 @@
 	     * jQuery(element).on('click', view.click);
 	     * // => Logs 'clicked docs' when clicked.
 	     */
-	    var bindAll = flatRest(function(object, methodNames) {
-	      arrayEach(methodNames, function(key) {
+	    var bindAll = baseRest(function(object, methodNames) {
+	      arrayEach(baseFlatten(methodNames, 1), function(key) {
 	        key = toKey(key);
-	        baseAssignValue(object, key, bind(object[key], object));
+	        object[key] = bind(object[key], object);
 	      });
 	      return object;
 	    });
@@ -21763,7 +22601,7 @@
 	      lodash.prototype[iteratorSymbol] = wrapperToIterator;
 	    }
 	    return lodash;
-	  });
+	  }
 
 	  /*--------------------------------------------------------------------------*/
 
@@ -21797,10 +22635,10 @@
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(39)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(52)(module)))
 
 /***/ },
-/* 39 */
+/* 52 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -21814,1077 +22652,6 @@
 		return module;
 	}
 
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(41);
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule update
-	 */
-
-	/* global hasOwnProperty:true */
-
-	'use strict';
-
-	var _prodInvariant = __webpack_require__(42),
-	    _assign = __webpack_require__(43);
-
-	var keyOf = __webpack_require__(44);
-	var invariant = __webpack_require__(45);
-	var hasOwnProperty = {}.hasOwnProperty;
-
-	function shallowCopy(x) {
-	  if (Array.isArray(x)) {
-	    return x.concat();
-	  } else if (x && typeof x === 'object') {
-	    return _assign(new x.constructor(), x);
-	  } else {
-	    return x;
-	  }
-	}
-
-	var COMMAND_PUSH = keyOf({ $push: null });
-	var COMMAND_UNSHIFT = keyOf({ $unshift: null });
-	var COMMAND_SPLICE = keyOf({ $splice: null });
-	var COMMAND_SET = keyOf({ $set: null });
-	var COMMAND_MERGE = keyOf({ $merge: null });
-	var COMMAND_APPLY = keyOf({ $apply: null });
-
-	var ALL_COMMANDS_LIST = [COMMAND_PUSH, COMMAND_UNSHIFT, COMMAND_SPLICE, COMMAND_SET, COMMAND_MERGE, COMMAND_APPLY];
-
-	var ALL_COMMANDS_SET = {};
-
-	ALL_COMMANDS_LIST.forEach(function (command) {
-	  ALL_COMMANDS_SET[command] = true;
-	});
-
-	function invariantArrayCase(value, spec, command) {
-	  !Array.isArray(value) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected target of %s to be an array; got %s.', command, value) : _prodInvariant('1', command, value) : void 0;
-	  var specValue = spec[command];
-	  !Array.isArray(specValue) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array; got %s. Did you forget to wrap your parameter in an array?', command, specValue) : _prodInvariant('2', command, specValue) : void 0;
-	}
-
-	/**
-	 * Returns a updated shallow copy of an object without mutating the original.
-	 * See https://facebook.github.io/react/docs/update.html for details.
-	 */
-	function update(value, spec) {
-	  !(typeof spec === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): You provided a key path to update() that did not contain one of %s. Did you forget to include {%s: ...}?', ALL_COMMANDS_LIST.join(', '), COMMAND_SET) : _prodInvariant('3', ALL_COMMANDS_LIST.join(', '), COMMAND_SET) : void 0;
-
-	  if (hasOwnProperty.call(spec, COMMAND_SET)) {
-	    !(Object.keys(spec).length === 1) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Cannot have more than one key in an object with %s', COMMAND_SET) : _prodInvariant('4', COMMAND_SET) : void 0;
-
-	    return spec[COMMAND_SET];
-	  }
-
-	  var nextValue = shallowCopy(value);
-
-	  if (hasOwnProperty.call(spec, COMMAND_MERGE)) {
-	    var mergeObj = spec[COMMAND_MERGE];
-	    !(mergeObj && typeof mergeObj === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): %s expects a spec of type \'object\'; got %s', COMMAND_MERGE, mergeObj) : _prodInvariant('5', COMMAND_MERGE, mergeObj) : void 0;
-	    !(nextValue && typeof nextValue === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): %s expects a target of type \'object\'; got %s', COMMAND_MERGE, nextValue) : _prodInvariant('6', COMMAND_MERGE, nextValue) : void 0;
-	    _assign(nextValue, spec[COMMAND_MERGE]);
-	  }
-
-	  if (hasOwnProperty.call(spec, COMMAND_PUSH)) {
-	    invariantArrayCase(value, spec, COMMAND_PUSH);
-	    spec[COMMAND_PUSH].forEach(function (item) {
-	      nextValue.push(item);
-	    });
-	  }
-
-	  if (hasOwnProperty.call(spec, COMMAND_UNSHIFT)) {
-	    invariantArrayCase(value, spec, COMMAND_UNSHIFT);
-	    spec[COMMAND_UNSHIFT].forEach(function (item) {
-	      nextValue.unshift(item);
-	    });
-	  }
-
-	  if (hasOwnProperty.call(spec, COMMAND_SPLICE)) {
-	    !Array.isArray(value) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Expected %s target to be an array; got %s', COMMAND_SPLICE, value) : _prodInvariant('7', COMMAND_SPLICE, value) : void 0;
-	    !Array.isArray(spec[COMMAND_SPLICE]) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array of arrays; got %s. Did you forget to wrap your parameters in an array?', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : _prodInvariant('8', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : void 0;
-	    spec[COMMAND_SPLICE].forEach(function (args) {
-	      !Array.isArray(args) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be an array of arrays; got %s. Did you forget to wrap your parameters in an array?', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : _prodInvariant('8', COMMAND_SPLICE, spec[COMMAND_SPLICE]) : void 0;
-	      nextValue.splice.apply(nextValue, args);
-	    });
-	  }
-
-	  if (hasOwnProperty.call(spec, COMMAND_APPLY)) {
-	    !(typeof spec[COMMAND_APPLY] === 'function') ? process.env.NODE_ENV !== 'production' ? invariant(false, 'update(): expected spec of %s to be a function; got %s.', COMMAND_APPLY, spec[COMMAND_APPLY]) : _prodInvariant('9', COMMAND_APPLY, spec[COMMAND_APPLY]) : void 0;
-	    nextValue = spec[COMMAND_APPLY](nextValue);
-	  }
-
-	  for (var k in spec) {
-	    if (!(ALL_COMMANDS_SET.hasOwnProperty(k) && ALL_COMMANDS_SET[k])) {
-	      nextValue[k] = update(value[k], spec[k]);
-	    }
-	  }
-
-	  return nextValue;
-	}
-
-	module.exports = update;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
-
-/***/ },
-/* 42 */
-/***/ function(module, exports) {
-
-	/**
-	 * Copyright (c) 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule reactProdInvariant
-	 * 
-	 */
-	'use strict';
-
-	/**
-	 * WARNING: DO NOT manually require this module.
-	 * This is a replacement for `invariant(...)` used by the error code system
-	 * and will _only_ be required by the corresponding babel pass.
-	 * It always throws.
-	 */
-
-	function reactProdInvariant(code) {
-	  var argCount = arguments.length - 1;
-
-	  var message = 'Minified React error #' + code + '; visit ' + 'http://facebook.github.io/react/docs/error-decoder.html?invariant=' + code;
-
-	  for (var argIdx = 0; argIdx < argCount; argIdx++) {
-	    message += '&args[]=' + encodeURIComponent(arguments[argIdx + 1]);
-	  }
-
-	  message += ' for the full message or use the non-minified dev environment' + ' for full errors and additional helpful warnings.';
-
-	  var error = new Error(message);
-	  error.name = 'Invariant Violation';
-	  error.framesToPop = 1; // we don't care about reactProdInvariant's own frame
-
-	  throw error;
-	}
-
-	module.exports = reactProdInvariant;
-
-/***/ },
-/* 43 */
-/***/ function(module, exports) {
-
-	'use strict';
-	/* eslint-disable no-unused-vars */
-	var hasOwnProperty = Object.prototype.hasOwnProperty;
-	var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-
-	function toObject(val) {
-		if (val === null || val === undefined) {
-			throw new TypeError('Object.assign cannot be called with null or undefined');
-		}
-
-		return Object(val);
-	}
-
-	function shouldUseNative() {
-		try {
-			if (!Object.assign) {
-				return false;
-			}
-
-			// Detect buggy property enumeration order in older V8 versions.
-
-			// https://bugs.chromium.org/p/v8/issues/detail?id=4118
-			var test1 = new String('abc');  // eslint-disable-line
-			test1[5] = 'de';
-			if (Object.getOwnPropertyNames(test1)[0] === '5') {
-				return false;
-			}
-
-			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-			var test2 = {};
-			for (var i = 0; i < 10; i++) {
-				test2['_' + String.fromCharCode(i)] = i;
-			}
-			var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
-				return test2[n];
-			});
-			if (order2.join('') !== '0123456789') {
-				return false;
-			}
-
-			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-			var test3 = {};
-			'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
-				test3[letter] = letter;
-			});
-			if (Object.keys(Object.assign({}, test3)).join('') !==
-					'abcdefghijklmnopqrst') {
-				return false;
-			}
-
-			return true;
-		} catch (e) {
-			// We don't expect any of the above to throw, but better to be safe.
-			return false;
-		}
-	}
-
-	module.exports = shouldUseNative() ? Object.assign : function (target, source) {
-		var from;
-		var to = toObject(target);
-		var symbols;
-
-		for (var s = 1; s < arguments.length; s++) {
-			from = Object(arguments[s]);
-
-			for (var key in from) {
-				if (hasOwnProperty.call(from, key)) {
-					to[key] = from[key];
-				}
-			}
-
-			if (Object.getOwnPropertySymbols) {
-				symbols = Object.getOwnPropertySymbols(from);
-				for (var i = 0; i < symbols.length; i++) {
-					if (propIsEnumerable.call(from, symbols[i])) {
-						to[symbols[i]] = from[symbols[i]];
-					}
-				}
-			}
-		}
-
-		return to;
-	};
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	/**
-	 * Copyright (c) 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 */
-
-	/**
-	 * Allows extraction of a minified key. Let's the build system minify keys
-	 * without losing the ability to dynamically use key strings as values
-	 * themselves. Pass in an object with a single key/val pair and it will return
-	 * you the string key of that single record. Suppose you want to grab the
-	 * value for a key 'className' inside of an object. Key/val minification may
-	 * have aliased that key to be 'xa12'. keyOf({className: null}) will return
-	 * 'xa12' in that case. Resolve keys you want to use once at startup time, then
-	 * reuse those resolutions.
-	 */
-	var keyOf = function keyOf(oneKeyObj) {
-	  var key;
-	  for (key in oneKeyObj) {
-	    if (!oneKeyObj.hasOwnProperty(key)) {
-	      continue;
-	    }
-	    return key;
-	  }
-	  return null;
-	};
-
-	module.exports = keyOf;
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright (c) 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 */
-
-	'use strict';
-
-	/**
-	 * Use invariant() to assert state which your program assumes to be true.
-	 *
-	 * Provide sprintf-style format (only %s is supported) and arguments
-	 * to provide information about what broke and what you were
-	 * expecting.
-	 *
-	 * The invariant message will be stripped in production, but the invariant
-	 * will remain to ensure logic does not differ in production.
-	 */
-
-	function invariant(condition, format, a, b, c, d, e, f) {
-	  if (process.env.NODE_ENV !== 'production') {
-	    if (format === undefined) {
-	      throw new Error('invariant requires an error message argument');
-	    }
-	  }
-
-	  if (!condition) {
-	    var error;
-	    if (format === undefined) {
-	      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
-	    } else {
-	      var args = [a, b, c, d, e, f];
-	      var argIndex = 0;
-	      error = new Error(format.replace(/%s/g, function () {
-	        return args[argIndex++];
-	      }));
-	      error.name = 'Invariant Violation';
-	    }
-
-	    error.framesToPop = 1; // we don't care about invariant's own frame
-	    throw error;
-	  }
-	}
-
-	module.exports = invariant;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.jQuery = exports.animation = undefined;
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _reactAddonsUpdate = __webpack_require__(40);
-
-	var _reactAddonsUpdate2 = _interopRequireDefault(_reactAddonsUpdate);
-
-	var _classnames = __webpack_require__(26);
-
-	var _classnames2 = _interopRequireDefault(_classnames);
-
-	var _animationMixin = __webpack_require__(47);
-
-	var _animationMixin2 = _interopRequireDefault(_animationMixin);
-
-	var _jQueryMixin = __webpack_require__(52);
-
-	var _jQueryMixin2 = _interopRequireDefault(_jQueryMixin);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function noop() {}
-
-	var ToastMessageSpec = {
-	  displayName: "ToastMessage",
-
-	  getDefaultProps: function getDefaultProps() {
-	    var iconClassNames = {
-	      error: "toast-error",
-	      info: "toast-info",
-	      success: "toast-success",
-	      warning: "toast-warning"
-	    };
-
-	    return {
-	      className: "toast",
-	      iconClassNames: iconClassNames,
-	      titleClassName: "toast-title",
-	      messageClassName: "toast-message",
-	      tapToDismiss: true,
-	      closeButton: false
-	    };
-	  },
-	  handleOnClick: function handleOnClick(event) {
-	    this.props.handleOnClick(event);
-	    if (this.props.tapToDismiss) {
-	      this.hideToast(true);
-	    }
-	  },
-	  _handle_close_button_click: function _handle_close_button_click(event) {
-	    event.stopPropagation();
-	    this.hideToast(true);
-	  },
-	  _handle_remove: function _handle_remove() {
-	    this.props.handleRemove(this.props.toastId);
-	  },
-	  _render_close_button: function _render_close_button() {
-	    return this.props.closeButton ? _react2.default.createElement("button", {
-	      className: "toast-close-button", role: "button",
-	      onClick: this._handle_close_button_click,
-	      dangerouslySetInnerHTML: { __html: "&times;" }
-	    }) : false;
-	  },
-	  _render_title_element: function _render_title_element() {
-	    return this.props.title ? _react2.default.createElement(
-	      "div",
-	      { className: this.props.titleClassName },
-	      this.props.title
-	    ) : false;
-	  },
-	  _render_message_element: function _render_message_element() {
-	    return this.props.message ? _react2.default.createElement(
-	      "div",
-	      { className: this.props.messageClassName },
-	      this.props.message
-	    ) : false;
-	  },
-	  render: function render() {
-	    var iconClassName = this.props.iconClassName || this.props.iconClassNames[this.props.type];
-
-	    return _react2.default.createElement(
-	      "div",
-	      {
-	        className: (0, _classnames2.default)(this.props.className, iconClassName),
-	        style: this.props.style,
-	        onClick: this.handleOnClick,
-	        onMouseEnter: this.handleMouseEnter,
-	        onMouseLeave: this.handleMouseLeave
-	      },
-	      this._render_close_button(),
-	      this._render_title_element(),
-	      this._render_message_element()
-	    );
-	  }
-	};
-
-	var animation = exports.animation = _react2.default.createClass((0, _reactAddonsUpdate2.default)(ToastMessageSpec, {
-	  displayName: { $set: "ToastMessage.animation" },
-	  mixins: { $set: [_animationMixin2.default] }
-	}));
-
-	var jQuery = exports.jQuery = _react2.default.createClass((0, _reactAddonsUpdate2.default)(ToastMessageSpec, {
-	  displayName: { $set: "ToastMessage.jQuery" },
-	  mixins: { $set: [_jQueryMixin2.default] }
-	}));
-
-	/*
-	 * assign default noop functions
-	 */
-	ToastMessageSpec.handleMouseEnter = noop;
-	ToastMessageSpec.handleMouseLeave = noop;
-	ToastMessageSpec.hideToast = noop;
-
-	var ToastMessage = _react2.default.createClass(ToastMessageSpec);
-
-	ToastMessage.animation = animation;
-	ToastMessage.jQuery = jQuery;
-
-	exports.default = ToastMessage;
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _ReactTransitionEvents = __webpack_require__(48);
-
-	var _ReactTransitionEvents2 = _interopRequireDefault(_ReactTransitionEvents);
-
-	var _reactDom = __webpack_require__(2);
-
-	var _reactDom2 = _interopRequireDefault(_reactDom);
-
-	var _elementClass = __webpack_require__(51);
-
-	var _elementClass2 = _interopRequireDefault(_elementClass);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var TICK = 17;
-	var toString = Object.prototype.toString;
-	exports.default = {
-	  getDefaultProps: function getDefaultProps() {
-	    return {
-	      transition: null, // some examples defined in index.scss (scale, fadeInOut, rotate)
-	      showAnimation: "animated bounceIn", // or other animations from animate.css
-	      hideAnimation: "animated bounceOut",
-	      timeOut: 5000,
-	      extendedTimeOut: 1000
-	    };
-	  },
-	  componentWillMount: function componentWillMount() {
-	    this.classNameQueue = [];
-	    this.isHiding = false;
-	    this.intervalId = null;
-	  },
-	  componentDidMount: function componentDidMount() {
-	    var _this = this;
-
-	    this._is_mounted = true;
-	    this._show();
-	    var node = _reactDom2.default.findDOMNode(this);
-
-	    var onHideComplete = function onHideComplete() {
-	      if (_this.isHiding) {
-	        _this._set_is_hiding(false);
-	        _ReactTransitionEvents2.default.removeEndEventListener(node, onHideComplete);
-	        _this._handle_remove();
-	      }
-	    };
-	    _ReactTransitionEvents2.default.addEndEventListener(node, onHideComplete);
-
-	    if (this.props.timeOut > 0) {
-	      this._set_interval_id(setTimeout(this.hideToast, this.props.timeOut));
-	    }
-	  },
-	  componentWillUnmount: function componentWillUnmount() {
-	    this._is_mounted = false;
-	    if (this.intervalId) {
-	      clearTimeout(this.intervalId);
-	    }
-	  },
-	  _set_transition: function _set_transition(hide) {
-	    var animationType = hide ? "leave" : "enter";
-	    var node = _reactDom2.default.findDOMNode(this);
-	    var className = this.props.transition + "-" + animationType;
-	    var activeClassName = className + "-active";
-
-	    var endListener = function endListener(e) {
-	      if (e && e.target !== node) {
-	        return;
-	      }
-
-	      var classList = (0, _elementClass2.default)(node);
-	      classList.remove(className);
-	      classList.remove(activeClassName);
-
-	      _ReactTransitionEvents2.default.removeEndEventListener(node, endListener);
-	    };
-
-	    _ReactTransitionEvents2.default.addEndEventListener(node, endListener);
-
-	    (0, _elementClass2.default)(node).add(className);
-
-	    // Need to do this to actually trigger a transition.
-	    this._queue_class(activeClassName);
-	  },
-	  _clear_transition: function _clear_transition(hide) {
-	    var node = _reactDom2.default.findDOMNode(this);
-	    var animationType = hide ? "leave" : "enter";
-	    var className = this.props.transition + "-" + animationType;
-	    var activeClassName = className + "-active";
-
-	    var classList = (0, _elementClass2.default)(node);
-	    classList.remove(className);
-	    classList.remove(activeClassName);
-	  },
-	  _set_animation: function _set_animation(hide) {
-	    var node = _reactDom2.default.findDOMNode(this);
-	    var animations = this._get_animation_classes(hide);
-	    var endListener = function endListener(e) {
-	      if (e && e.target !== node) {
-	        return;
-	      }
-
-	      animations.forEach(function (anim) {
-	        return (0, _elementClass2.default)(node).remove(anim);
-	      });
-
-	      _ReactTransitionEvents2.default.removeEndEventListener(node, endListener);
-	    };
-
-	    _ReactTransitionEvents2.default.addEndEventListener(node, endListener);
-
-	    animations.forEach(function (anim) {
-	      return (0, _elementClass2.default)(node).add(anim);
-	    });
-	  },
-	  _get_animation_classes: function _get_animation_classes(hide) {
-	    var animations = hide ? this.props.hideAnimation : this.props.showAnimation;
-	    if ("[object Array]" === toString.call(animations)) {
-	      return animations;
-	    } else if ("string" === typeof animations) {
-	      return animations.split(" ");
-	    }
-	  },
-	  _clear_animation: function _clear_animation(hide) {
-	    var node = _reactDom2.default.findDOMNode(this);
-	    var animations = this._get_animation_classes(hide);
-	    animations.forEach(function (animation) {
-	      return (0, _elementClass2.default)(node).remove(animation);
-	    });
-	  },
-	  _queue_class: function _queue_class(className) {
-	    this.classNameQueue.push(className);
-
-	    if (!this.timeout) {
-	      this.timeout = setTimeout(this._flush_class_name_queue, TICK);
-	    }
-	  },
-	  _flush_class_name_queue: function _flush_class_name_queue() {
-	    var _this2 = this;
-
-	    if (this._is_mounted) {
-	      (function () {
-	        var node = _reactDom2.default.findDOMNode(_this2);
-	        _this2.classNameQueue.forEach(function (className) {
-	          return (0, _elementClass2.default)(node).add(className);
-	        });
-	      })();
-	    }
-	    this.classNameQueue.length = 0;
-	    this.timeout = null;
-	  },
-	  _show: function _show() {
-	    if (this.props.transition) {
-	      this._set_transition();
-	    } else if (this.props.showAnimation) {
-	      this._set_animation();
-	    }
-	  },
-	  handleMouseEnter: function handleMouseEnter() {
-	    clearTimeout(this.intervalId);
-	    this._set_interval_id(null);
-	    if (this.isHiding) {
-	      this._set_is_hiding(false);
-
-	      if (this.props.hideAnimation) {
-	        this._clear_animation(true);
-	      } else if (this.props.transition) {
-	        this._clear_transition(true);
-	      }
-	    }
-	  },
-	  handleMouseLeave: function handleMouseLeave() {
-	    if (!this.isHiding && (this.props.timeOut > 0 || this.props.extendedTimeOut > 0)) {
-	      this._set_interval_id(setTimeout(this.hideToast, this.props.extendedTimeOut));
-	    }
-	  },
-	  hideToast: function hideToast(override) {
-	    if (this.isHiding || this.intervalId === null && !override) {
-	      return;
-	    }
-
-	    this._set_is_hiding(true);
-	    if (this.props.transition) {
-	      this._set_transition(true);
-	    } else if (this.props.hideAnimation) {
-	      this._set_animation(true);
-	    } else {
-	      this._handle_remove();
-	    }
-	  },
-	  _set_interval_id: function _set_interval_id(intervalId) {
-	    this.intervalId = intervalId;
-	  },
-	  _set_is_hiding: function _set_is_hiding(isHiding) {
-	    this.isHiding = isHiding;
-	  }
-	};
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Copyright 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule ReactTransitionEvents
-	 */
-
-	'use strict';
-
-	var ExecutionEnvironment = __webpack_require__(49);
-
-	var getVendorPrefixedEventName = __webpack_require__(50);
-
-	var endEvents = [];
-
-	function detectEvents() {
-	  var animEnd = getVendorPrefixedEventName('animationend');
-	  var transEnd = getVendorPrefixedEventName('transitionend');
-
-	  if (animEnd) {
-	    endEvents.push(animEnd);
-	  }
-
-	  if (transEnd) {
-	    endEvents.push(transEnd);
-	  }
-	}
-
-	if (ExecutionEnvironment.canUseDOM) {
-	  detectEvents();
-	}
-
-	// We use the raw {add|remove}EventListener() call because EventListener
-	// does not know how to remove event listeners and we really should
-	// clean up. Also, these events are not triggered in older browsers
-	// so we should be A-OK here.
-
-	function addEventListener(node, eventName, eventListener) {
-	  node.addEventListener(eventName, eventListener, false);
-	}
-
-	function removeEventListener(node, eventName, eventListener) {
-	  node.removeEventListener(eventName, eventListener, false);
-	}
-
-	var ReactTransitionEvents = {
-	  addEndEventListener: function (node, eventListener) {
-	    if (endEvents.length === 0) {
-	      // If CSS transitions are not supported, trigger an "end animation"
-	      // event immediately.
-	      window.setTimeout(eventListener, 0);
-	      return;
-	    }
-	    endEvents.forEach(function (endEvent) {
-	      addEventListener(node, endEvent, eventListener);
-	    });
-	  },
-
-	  removeEndEventListener: function (node, eventListener) {
-	    if (endEvents.length === 0) {
-	      return;
-	    }
-	    endEvents.forEach(function (endEvent) {
-	      removeEventListener(node, endEvent, eventListener);
-	    });
-	  }
-	};
-
-	module.exports = ReactTransitionEvents;
-
-/***/ },
-/* 49 */
-/***/ function(module, exports) {
-
-	/**
-	 * Copyright (c) 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 */
-
-	'use strict';
-
-	var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
-
-	/**
-	 * Simple, lightweight module assisting with the detection and context of
-	 * Worker. Helps avoid circular dependencies and allows code to reason about
-	 * whether or not they are in a Worker, even if they never include the main
-	 * `ReactWorker` dependency.
-	 */
-	var ExecutionEnvironment = {
-
-	  canUseDOM: canUseDOM,
-
-	  canUseWorkers: typeof Worker !== 'undefined',
-
-	  canUseEventListeners: canUseDOM && !!(window.addEventListener || window.attachEvent),
-
-	  canUseViewport: canUseDOM && !!window.screen,
-
-	  isInWorker: !canUseDOM // For now, this is true - might change in the future.
-
-	};
-
-	module.exports = ExecutionEnvironment;
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Copyright 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule getVendorPrefixedEventName
-	 */
-
-	'use strict';
-
-	var ExecutionEnvironment = __webpack_require__(49);
-
-	/**
-	 * Generate a mapping of standard vendor prefixes using the defined style property and event name.
-	 *
-	 * @param {string} styleProp
-	 * @param {string} eventName
-	 * @returns {object}
-	 */
-	function makePrefixMap(styleProp, eventName) {
-	  var prefixes = {};
-
-	  prefixes[styleProp.toLowerCase()] = eventName.toLowerCase();
-	  prefixes['Webkit' + styleProp] = 'webkit' + eventName;
-	  prefixes['Moz' + styleProp] = 'moz' + eventName;
-	  prefixes['ms' + styleProp] = 'MS' + eventName;
-	  prefixes['O' + styleProp] = 'o' + eventName.toLowerCase();
-
-	  return prefixes;
-	}
-
-	/**
-	 * A list of event names to a configurable list of vendor prefixes.
-	 */
-	var vendorPrefixes = {
-	  animationend: makePrefixMap('Animation', 'AnimationEnd'),
-	  animationiteration: makePrefixMap('Animation', 'AnimationIteration'),
-	  animationstart: makePrefixMap('Animation', 'AnimationStart'),
-	  transitionend: makePrefixMap('Transition', 'TransitionEnd')
-	};
-
-	/**
-	 * Event names that have already been detected and prefixed (if applicable).
-	 */
-	var prefixedEventNames = {};
-
-	/**
-	 * Element to check for prefixes on.
-	 */
-	var style = {};
-
-	/**
-	 * Bootstrap if a DOM exists.
-	 */
-	if (ExecutionEnvironment.canUseDOM) {
-	  style = document.createElement('div').style;
-
-	  // On some platforms, in particular some releases of Android 4.x,
-	  // the un-prefixed "animation" and "transition" properties are defined on the
-	  // style object but the events that fire will still be prefixed, so we need
-	  // to check if the un-prefixed events are usable, and if not remove them from the map.
-	  if (!('AnimationEvent' in window)) {
-	    delete vendorPrefixes.animationend.animation;
-	    delete vendorPrefixes.animationiteration.animation;
-	    delete vendorPrefixes.animationstart.animation;
-	  }
-
-	  // Same as above
-	  if (!('TransitionEvent' in window)) {
-	    delete vendorPrefixes.transitionend.transition;
-	  }
-	}
-
-	/**
-	 * Attempts to determine the correct vendor prefixed event name.
-	 *
-	 * @param {string} eventName
-	 * @returns {string}
-	 */
-	function getVendorPrefixedEventName(eventName) {
-	  if (prefixedEventNames[eventName]) {
-	    return prefixedEventNames[eventName];
-	  } else if (!vendorPrefixes[eventName]) {
-	    return eventName;
-	  }
-
-	  var prefixMap = vendorPrefixes[eventName];
-
-	  for (var styleProp in prefixMap) {
-	    if (prefixMap.hasOwnProperty(styleProp) && styleProp in style) {
-	      return prefixedEventNames[eventName] = prefixMap[styleProp];
-	    }
-	  }
-
-	  return '';
-	}
-
-	module.exports = getVendorPrefixedEventName;
-
-/***/ },
-/* 51 */
-/***/ function(module, exports) {
-
-	module.exports = function(opts) {
-	  return new ElementClass(opts)
-	}
-
-	function indexOf(arr, prop) {
-	  if (arr.indexOf) return arr.indexOf(prop)
-	  for (var i = 0, len = arr.length; i < len; i++)
-	    if (arr[i] === prop) return i
-	  return -1
-	}
-
-	function ElementClass(opts) {
-	  if (!(this instanceof ElementClass)) return new ElementClass(opts)
-	  var self = this
-	  if (!opts) opts = {}
-
-	  // similar doing instanceof HTMLElement but works in IE8
-	  if (opts.nodeType) opts = {el: opts}
-
-	  this.opts = opts
-	  this.el = opts.el || document.body
-	  if (typeof this.el !== 'object') this.el = document.querySelector(this.el)
-	}
-
-	ElementClass.prototype.add = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (el.className === "") return el.className = className
-	  var classes = el.className.split(' ')
-	  if (indexOf(classes, className) > -1) return classes
-	  classes.push(className)
-	  el.className = classes.join(' ')
-	  return classes
-	}
-
-	ElementClass.prototype.remove = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (el.className === "") return
-	  var classes = el.className.split(' ')
-	  var idx = indexOf(classes, className)
-	  if (idx > -1) classes.splice(idx, 1)
-	  el.className = classes.join(' ')
-	  return classes
-	}
-
-	ElementClass.prototype.has = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  var classes = el.className.split(' ')
-	  return indexOf(classes, className) > -1
-	}
-
-	ElementClass.prototype.toggle = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (this.has(className)) this.remove(className)
-	  else this.add(className)
-	}
-
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _reactDom = __webpack_require__(2);
-
-	var _reactDom2 = _interopRequireDefault(_reactDom);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function call_show_method($node, props) {
-	  $node[props.showMethod]({
-	    duration: props.showDuration,
-	    easing: props.showEasing
-	  });
-	}
-
-	exports.default = {
-	  getDefaultProps: function getDefaultProps() {
-	    return {
-	      style: {
-	        display: "none" },
-	      showMethod: "fadeIn", // slideDown, and show are built into jQuery
-	      showDuration: 300,
-	      showEasing: "swing", // and linear are built into jQuery
-	      hideMethod: "fadeOut",
-	      hideDuration: 1000,
-	      hideEasing: "swing",
-	      //
-	      timeOut: 5000,
-	      extendedTimeOut: 1000
-	    };
-	  },
-	  getInitialState: function getInitialState() {
-	    return {
-	      intervalId: null,
-	      isHiding: false
-	    };
-	  },
-	  componentDidMount: function componentDidMount() {
-	    call_show_method(this._get_$_node(), this.props);
-	    if (this.props.timeOut > 0) {
-	      this._set_interval_id(setTimeout(this.hideToast, this.props.timeOut));
-	    }
-	  },
-	  handleMouseEnter: function handleMouseEnter() {
-	    clearTimeout(this.state.intervalId);
-	    this._set_interval_id(null);
-	    this._set_is_hiding(false);
-
-	    call_show_method(this._get_$_node().stop(true, true), this.props);
-	  },
-	  handleMouseLeave: function handleMouseLeave() {
-	    if (!this.state.isHiding && (this.props.timeOut > 0 || this.props.extendedTimeOut > 0)) {
-	      this._set_interval_id(setTimeout(this.hideToast, this.props.extendedTimeOut));
-	    }
-	  },
-	  hideToast: function hideToast(override) {
-	    if (this.state.isHiding || this.state.intervalId === null && !override) {
-	      return;
-	    }
-	    this.setState({ isHiding: true });
-
-	    this._get_$_node()[this.props.hideMethod]({
-	      duration: this.props.hideDuration,
-	      easing: this.props.hideEasing,
-	      complete: this._handle_remove
-	    });
-	  },
-	  _get_$_node: function _get_$_node() {
-	    /* eslint-disable no-undef */
-	    return jQuery(_reactDom2.default.findDOMNode(this));
-	    /* eslint-enable no-undef */
-	  },
-	  _set_interval_id: function _set_interval_id(intervalId) {
-	    this.setState({
-	      intervalId: intervalId
-	    });
-	  },
-	  _set_is_hiding: function _set_is_hiding(isHiding) {
-	    this.setState({
-	      isHiding: isHiding
-	    });
-	  }
-	};
 
 /***/ },
 /* 53 */
@@ -22958,7 +22725,7 @@
 	    this.changeSizePerPage = function (e) {
 	      e.preventDefault();
 
-	      var selectSize = parseInt(e.currentTarget.getAttribute('data-page'), 10);
+	      var selectSize = parseInt(e.currentTarget.text, 10);
 	      var currPage = _this.props.currPage;
 
 	      if (selectSize !== _this.props.sizePerPage) {
@@ -22997,32 +22764,27 @@
 	      };
 
 	      var sizePerPageOptions = sizePerPageList.map(function (_sizePerPage) {
-	        var pageText = _sizePerPage.text || _sizePerPage;
-	        var pageNum = _sizePerPage.value || _sizePerPage;
 	        return _react2['default'].createElement(
 	          'li',
-	          { key: pageText, role: 'presentation' },
+	          { key: _sizePerPage, role: 'presentation' },
 	          _react2['default'].createElement(
 	            'a',
 	            { role: 'menuitem',
 	              tabIndex: '-1', href: '#',
-	              'data-page': pageNum,
 	              onClick: _this2.changeSizePerPage },
-	            pageText
+	            _sizePerPage
 	          )
 	        );
 	      });
 
 	      var offset = Math.abs(_Const2['default'].PAGE_START_INDEX - pageStartIndex);
 	      var start = (currPage - pageStartIndex) * sizePerPage;
-	      start = dataSize === 0 ? 0 : start + 1;
 	      var to = Math.min(sizePerPage * (currPage + offset) - 1, dataSize);
-	      if (to >= dataSize) to--;
 	      var total = paginationShowsTotal ? _react2['default'].createElement(
 	        'span',
 	        null,
 	        'Showing rows ',
-	        start,
+	        start + 1,
 	        ' to ',
 	        to + 1,
 	        ' of ',
@@ -23240,15 +23002,14 @@
 	      var classes = (0, _classnames2['default'])({
 	        'active': this.props.active,
 	        'disabled': this.props.disable,
-	        'hidden': this.props.hidden,
-	        'page-item': true
+	        'hidden': this.props.hidden
 	      });
 	      return _react2['default'].createElement(
 	        'li',
 	        { className: classes },
 	        _react2['default'].createElement(
 	          'a',
-	          { href: '#', onClick: this.pageBtnClick, className: 'page-link' },
+	          { href: '#', onClick: this.pageBtnClick },
 	          this.props.children
 	        )
 	      );
@@ -24343,6 +24104,7 @@
 	      try {
 	        return new RegExp(filterVal, 'i').test(targetVal);
 	      } catch (e) {
+	        console.error('Invalid regular expression');
 	        return true;
 	      }
 	    }
@@ -24358,9 +24120,7 @@
 	  }, {
 	    key: 'filterText',
 	    value: function filterText(targetVal, filterVal) {
-	      targetVal = targetVal.toString().toLowerCase();
-	      filterVal = filterVal.toString().toLowerCase();
-	      if (targetVal.indexOf(filterVal) === -1) {
+	      if (targetVal.toString().toLowerCase().indexOf(filterVal) === -1) {
 	        return false;
 	      }
 	      return true;
@@ -25412,10 +25172,6 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _classnames = __webpack_require__(26);
-
-	var _classnames2 = _interopRequireDefault(_classnames);
-
 	var _Const = __webpack_require__(27);
 
 	var _Const2 = _interopRequireDefault(_Const);
@@ -25514,7 +25270,6 @@
 	      var defaultCaret = undefined;
 	      var _props = this.props;
 	      var dataAlign = _props.dataAlign;
-	      var dataField = _props.dataField;
 	      var headerAlign = _props.headerAlign;
 	      var hidden = _props.hidden;
 	      var sort = _props.sort;
@@ -25522,7 +25277,6 @@
 	      var sortIndicator = _props.sortIndicator;
 	      var children = _props.children;
 	      var caretRender = _props.caretRender;
-	      var className = _props.className;
 
 	      var thStyle = {
 	        textAlign: headerAlign || dataAlign,
@@ -25546,10 +25300,10 @@
 	      }
 	      var sortCaret = sort ? _util2['default'].renderReactSortCaret(sort) : defaultCaret;
 	      if (caretRender) {
-	        sortCaret = caretRender(sort, dataField);
+	        sortCaret = caretRender(sort);
 	      }
-	      var classes = (0, _classnames2['default'])(typeof className === 'function' ? className() : className, dataSort ? 'sort-column' : '');
 
+	      var classes = this.props.className + ' ' + (dataSort ? 'sort-column' : '');
 	      var title = typeof children === 'string' ? { title: children } : null;
 	      return _react2['default'].createElement(
 	        'th',
@@ -25660,7 +25414,7 @@
 	  hidden: _react.PropTypes.bool,
 	  hiddenOnInsert: _react.PropTypes.bool,
 	  searchable: _react.PropTypes.bool,
-	  className: _react.PropTypes.oneOfType([_react.PropTypes.string, _react.PropTypes.func]),
+	  className: _react.PropTypes.string,
 	  width: _react.PropTypes.string,
 	  sortFunc: _react.PropTypes.func,
 	  sortFuncExtraData: _react.PropTypes.any,
