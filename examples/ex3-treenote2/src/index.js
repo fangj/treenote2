@@ -13,11 +13,11 @@ function render(node,vtype){
       tree.mk_son_by_data(node._p,"new").then(_=>{
         console.log("publish updated ")
         // PubSub.publish('updated');
-        PubSub.publish(node._p);
+        PubSub.publish(node._p,{msg:"refresh"});
       });
     }}><div className="main">+{node._p}</div></div>
   }
-  return <div className={vtype}><pre>{JSON.stringify(node,null,2)}</pre></div>
+  return <div className={vtype} onClick={()=>{PubSub.publish(node._link.p,{msg:'focus',gid:node._id})}}><pre>{JSON.stringify(node,null,2)}</pre></div>
 }
         
 // ReactDOM.render(

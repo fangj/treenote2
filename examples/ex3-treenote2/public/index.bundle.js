@@ -37,7 +37,7 @@ webpackJsonp([0],{
 	          tree.mk_son_by_data(node._p, "new").then(function (_) {
 	            console.log("publish updated ");
 	            // PubSub.publish('updated');
-	            PubSub.publish(node._p);
+	            PubSub.publish(node._p, { msg: "refresh" });
 	          });
 	        } },
 	      _react2.default.createElement(
@@ -50,7 +50,9 @@ webpackJsonp([0],{
 	  }
 	  return _react2.default.createElement(
 	    'div',
-	    { className: vtype },
+	    { className: vtype, onClick: function onClick() {
+	        PubSub.publish(node._link.p, { msg: 'focus', gid: node._id });
+	      } },
 	    _react2.default.createElement(
 	      'pre',
 	      null,
@@ -120,6 +122,7 @@ webpackJsonp([0],{
 	var cx = __webpack_require__(21);
 	var _ = __webpack_require__(46);
 	__webpack_require__(66);
+	var PubSub = __webpack_require__(8);
 
 	var NodeWrapper = function (_React$Component) {
 	  _inherits(NodeWrapper, _React$Component);
@@ -127,7 +130,14 @@ webpackJsonp([0],{
 	  function NodeWrapper(props) {
 	    _classCallCheck(this, NodeWrapper);
 
-	    return _possibleConstructorReturn(this, (NodeWrapper.__proto__ || Object.getPrototypeOf(NodeWrapper)).call(this, props));
+	    var _this = _possibleConstructorReturn(this, (NodeWrapper.__proto__ || Object.getPrototypeOf(NodeWrapper)).call(this, props));
+
+	    var _this$props = _this.props;
+	    var expands = _this$props.expands;
+	    var focus = _this$props.focus;
+
+	    _this.state = { expands: expands || [], focus: focus };
+	    return _this;
 	  }
 
 	  _createClass(NodeWrapper, [{
@@ -138,124 +148,155 @@ webpackJsonp([0],{
 	      var node = _props.node;
 	      var render = _props.render;
 	      var tree = _props.tree;
-	      var focus = _props.focus;
-	      var expands = _props.expands;
+	      var _state = this.state;
+	      var expands = _state.expands;
+	      var focus = _state.focus;
 
-	      expands = expands || [];
 	      var expand = false; //是否要展开当前节点？默认不展开
 	      if (expands.length > 0) {
-	        var _expands = expands;
+	        var _expands = _toArray(expands);
 
-	        var _expands2 = _toArray(_expands);
+	        var first = _expands[0];
 
-	        var first = _expands2[0];
-
-	        var remain = _expands2.slice(1);
+	        var remain = _expands.slice(1);
 
 	        if (first === node._id) {
 	          expand = true; //当前结点在要展开的节点中，展开
 	        }
 	      }
-	      console.log(expand);
 	      if (expand) {
 	        return _react2.default.createElement(_tree_node_reader2.default, { tree: tree, gid: node._id, view: NodeWithChildren, render: render, focus: focus, level: 1, expands: remain });
 	      } else {
 	        return _react2.default.createElement(Noder, { tree: tree, node: node, render: render, focus: focus });
 	      }
 	    }
+	  }, {
+	    key: 'componentDidMount',
+	    value: function componentDidMount() {
+	      var me = this;
+	      var node = this.props.node;
+
+	      function mysubscriber(gid, data) {
+	        console.log('got', gid, data);
+	        if (data.msg == 'focus') {
+	          var focus = data.gid;
+
+	          console.log('old state', me.state);
+	          console.log('new state', {
+	            expands: [node._id, focus],
+	            focus: focus
+	          });
+
+	          me.setState({
+	            expands: [node._id, focus],
+	            focus: focus
+	          });
+	        }
+	      }
+	      this.token = PubSub.subscribe(node._id, mysubscriber);
+	    }
+	  }, {
+	    key: 'componentWillUnmount',
+	    value: function componentWillUnmount() {
+	      PubSub.unsubscribe(this.token);
+	    }
 	  }]);
 
 	  return NodeWrapper;
 	}(_react2.default.Component);
 
-	var NodeWithChildren = function (_React$Component2) {
-	  _inherits(NodeWithChildren, _React$Component2);
+	var NodeWithChildren = function NodeWithChildren(props) {
+	  console.log('NodeWithChildren render');
+	  var render = props.render;
+	  var node = props.node;
+	  var focus = props.focus;
 
-	  function NodeWithChildren(props) {
-	    _classCallCheck(this, NodeWithChildren);
+	  var others = _objectWithoutProperties(props, ['render', 'node', 'focus']);
 
-	    return _possibleConstructorReturn(this, (NodeWithChildren.__proto__ || Object.getPrototypeOf(NodeWithChildren)).call(this, props));
-	  }
-
-	  _createClass(NodeWithChildren, [{
-	    key: 'render',
-	    value: function render() {
-	      var me = this;
-	      var _me$props = me.props;
-	      var render = _me$props.render;
-	      var node = _me$props.node;
-	      var focus = _me$props.focus;
-
-	      var others = _objectWithoutProperties(_me$props, ['render', 'node', 'focus']);
-
-	      var vnode = { _type: "vnode", _p: node._id };
-	      return _react2.default.createElement(
-	        'div',
-	        { className: 'node' },
-	        _react2.default.createElement(
-	          'div',
-	          { className: cx("main", { focus: focus === node._id }) },
-	          render(node)
-	        ),
-	        _react2.default.createElement(
-	          'div',
-	          { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
-	          render(vnode),
-	          node._children.map(function (cnode) {
-	            return _react2.default.createElement(NodeWrapper, _extends({ key: cnode._id, node: cnode, render: render, focus: focus }, others));
-	          })
-	        )
-	      );
-	    }
-	  }]);
-
-	  return NodeWithChildren;
-	}(_react2.default.Component);
-
-	NodeWithChildren.propTypes = {
-	  node: _react2.default.PropTypes.object
+	  var vnode = { _type: "vnode", _p: node._id };
+	  return _react2.default.createElement(
+	    'div',
+	    { className: 'node' },
+	    _react2.default.createElement(
+	      'div',
+	      { className: cx("main", { focus: focus === node._id }) },
+	      render(node)
+	    ),
+	    _react2.default.createElement(
+	      'div',
+	      { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
+	      render(vnode),
+	      node._children.map(function (cnode) {
+	        return _react2.default.createElement(NodeWrapper, _extends({ key: cnode._id, node: cnode, render: render, focus: focus }, others));
+	      })
+	    )
+	  );
 	};
 
-	var Noder = function (_React$Component3) {
-	  _inherits(Noder, _React$Component3);
+	// class NodeWithChildren extends React.Component {
+	//   static propTypes = {
+	//     node: React.PropTypes.object,
+	//   };
 
-	  function Noder(props) {
-	    _classCallCheck(this, Noder);
+	//   constructor(props) {
+	//     super(props);
+	//   }
 
-	    return _possibleConstructorReturn(this, (Noder.__proto__ || Object.getPrototypeOf(Noder)).call(this, props));
-	  }
+	//   render() {
+	//   	console.log('NodeWithChildren render')
+	//     const me=this;
+	//     const {render,node,focus,...others}=me.props;
+	//     const vnode={_type:"vnode",_p:node._id};
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
+	//         </div>
 
-	  _createClass(Noder, [{
-	    key: 'render',
-	    value: function render() {
-	      var me = this;
-	      var _me$props2 = me.props;
-	      var render = _me$props2.render;
-	      var node = _me$props2.node;
-	      var expands = _me$props2.expands;
-	      var focus = _me$props2.focus;
+	//     );
+	//   }
+	// }
 
-	      return _react2.default.createElement(
-	        'div',
-	        { className: 'node' },
-	        _react2.default.createElement(
-	          'div',
-	          { className: cx("main", { focus: focus === node._id }) },
-	          render(node)
-	        )
-	      );
-	    }
-	  }]);
+	// class Noder extends React.Component {
+	//   static propTypes = {
+	//     node: React.PropTypes.object,
+	//   };
 
-	  return Noder;
-	}(_react2.default.Component);
+	//   constructor(props) {
+	//     super(props);
+	//   }
 
-	Noder.propTypes = {
-	  node: _react2.default.PropTypes.object
+	//   render() {
+	//     const me=this;
+	//     const {render,node,expands,focus}=me.props;
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//         </div>
+
+	//     );
+	//   }
+	// }
+
+	var Noder = function Noder(props) {
+	  var render = props.render;
+	  var node = props.node;
+	  var expands = props.expands;
+	  var focus = props.focus;
+
+	  return _react2.default.createElement(
+	    'div',
+	    { className: 'node' },
+	    _react2.default.createElement(
+	      'div',
+	      { className: cx("main", { focus: focus === node._id }) },
+	      render(node)
+	    )
+	  );
 	};
 
-	var tree_browser = function (_React$Component4) {
-	  _inherits(tree_browser, _React$Component4);
+	var tree_browser = function (_React$Component2) {
+	  _inherits(tree_browser, _React$Component2);
 
 	  function tree_browser() {
 	    _classCallCheck(this, tree_browser);
