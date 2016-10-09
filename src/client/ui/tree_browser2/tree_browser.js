@@ -34,7 +34,6 @@ class NodeWithChildren extends React.Component {
     const me=this;
     const {render,node,expands,focus}=me.props;
     const vnode={_type:"vnode",_p:node._id};
-    console.log('focus,node._id',focus,node._id)
     return (
         <div className="node" >
           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>

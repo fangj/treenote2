@@ -685,7 +685,6 @@ webpackJsonp([0],{
 	      var focus = _me$props.focus;
 
 	      var vnode = { _type: "vnode", _p: node._id };
-	      console.log('focus,node._id', focus, node._id);
 	      return _react2.default.createElement(
 	        'div',
 	        { className: 'node' },
