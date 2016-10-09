@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
+// import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
 import TreeBrowser2 from 'treenote2/src/client/ui/tree_browser2';
 import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 var PubSub =require('pubsub-js');
@@ -17,7 +17,7 @@ function render(node,vtype){
       });
     }}><div className="main">+{node._p}</div></div>
   }
-  return <div className={vtype}><pre>{JSON.stringify(node)}</pre></div>
+  return <div className={vtype}><pre>{JSON.stringify(node,null,2)}</pre></div>
 }
         
 // ReactDOM.render(
@@ -30,7 +30,7 @@ function render(node,vtype){
 
 ReactDOM.render(
    <div>
-   <TreeBrowser2 tree={tree} render={render} gid='0' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
+   <TreeBrowser2 tree={tree} render={render} root='0' gid='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
    </div>,
   document.getElementById('root')
 );
