@@ -360,14 +360,14 @@ webpackJsonp([0],{
 	    }
 	}
 
-	function has(arr, obj) {
+	function includes(arr, obj) {
 	    return arr.indexOf(obj) > -1;
 	}
 
 	function expand2(node) {
 	    var expands = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
 	    //expands用于控制展开的节点列表
-	    if (node._link.children.length == 0 || !has(expands, node._id)) {
+	    if (node._link.children.length == 0 || !includes(expands, node._id)) {
 	        //不做展开的2种情况。1.没有子节点。2，expands数组中没有此项
 	        var cloneNode = clone(node);
 	        cloneNode._children = [];
@@ -745,12 +745,12 @@ webpackJsonp([0],{
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
-	  value: true
+	        value: true
 	});
 
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 	var _react = __webpack_require__(1);
 
@@ -762,130 +762,84 @@ webpackJsonp([0],{
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
-
-	function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
 	var cx = __webpack_require__(12);
 	var _ = __webpack_require__(13);
 	__webpack_require__(72);
 	var PubSub = __webpack_require__(8);
 
-	var NodeWrapper = function (_React$Component) {
-	  _inherits(NodeWrapper, _React$Component);
+	// class NodeWrapper extends  React.Component {
+	//   constructor(props) {
+	//     super(props);
+	//     const {expands,focus}=this.props;
+	//     this.state={expands:expands||[],focus}
+	//   }
 
-	  function NodeWrapper(props) {
-	    _classCallCheck(this, NodeWrapper);
+	//   render() {
+	// 	  const {gid,node,render,tree}=this.props;
+	// 	  const {expands,focus}=this.state;
+	// 		var expand=false;//是否要展开当前节点？默认不展开
+	// 		if(expands.length>0){
+	// 			var [first,...remain]=expands;
+	// 			if(first===node._id){
+	// 				expand=true;//当前结点在要展开的节点中，展开
+	// 			}
+	// 		}
+	// 		this.state.expand=expand;
+	// 	  if(expand){
+	// 	  	return <TreeNodeReader  tree={tree} gid={node._id} view={NodeWithChildren}  render={render} focus={focus} level={1} expands={remain}/>
+	// 	  }else{
+	// 	  	return <Noder  tree={tree} node={node}  render={render}  focus={focus} />
+	// 	  }
+	//   }	
 
-	    var _this = _possibleConstructorReturn(this, (NodeWrapper.__proto__ || Object.getPrototypeOf(NodeWrapper)).call(this, props));
+	//   componentDidMount() {
+	//   	const me=this;
+	//   	const {node}=this.props;
+	//   	function mysubscriber(gid,data){
+	//   		console.log('got',gid,data);
+	//   		if(data.msg=='focus'){
+	//   			const focus=data.gid;
 
-	    var _this$props = _this.props;
-	    var expands = _this$props.expands;
-	    var focus = _this$props.focus;
+	//   			console.log('old state',me.state);
+	//   			console.log('new state',{
+	//   				expands:[node._id,focus],
+	//   				focus
+	//   			});
 
-	    _this.state = { expands: expands || [], focus: focus };
-	    return _this;
-	  }
+	//   			me.setState({
+	//   				expands:[node._id,focus],
+	//   				focus
+	//   			})
+	//   		}
+	//   	}
+	//   	this.token=PubSub.subscribe(node._id,mysubscriber)
+	//   }
+	//   componentWillUnmount() {
+	//   	PubSub.unsubscribe(this.token);
+	//   }
 
-	  _createClass(NodeWrapper, [{
-	    key: 'render',
-	    value: function render() {
-	      var _props = this.props;
-	      var gid = _props.gid;
-	      var node = _props.node;
-	      var render = _props.render;
-	      var tree = _props.tree;
-	      var _state = this.state;
-	      var expands = _state.expands;
-	      var focus = _state.focus;
+	// }
 
-	      var expand = false; //是否要展开当前节点？默认不展开
-	      if (expands.length > 0) {
-	        var _expands = _toArray(expands);
+	// const NodeWithChildren=(props)=>{
+	// 	console.log('NodeWithChildren render')
+	//     const {render,node,focus,...others}=props;
+	//     const vnode={_type:"vnode",_p:node._id};
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
+	//         </div>
 
-	        var first = _expands[0];
-
-	        var remain = _expands.slice(1);
-
-	        if (first === node._id) {
-	          expand = true; //当前结点在要展开的节点中，展开
-	        }
-	      }
-	      this.state.expand = expand;
-	      if (expand) {
-	        return _react2.default.createElement(_tree_node_reader2.default, { tree: tree, gid: node._id, view: NodeWithChildren, render: render, focus: focus, level: 1, expands: remain });
-	      } else {
-	        return _react2.default.createElement(Noder, { tree: tree, node: node, render: render, focus: focus });
-	      }
-	    }
-	  }, {
-	    key: 'componentDidMount',
-	    value: function componentDidMount() {
-	      var me = this;
-	      var node = this.props.node;
-
-	      function mysubscriber(gid, data) {
-	        console.log('got', gid, data);
-	        if (data.msg == 'focus') {
-	          var focus = data.gid;
-
-	          console.log('old state', me.state);
-	          console.log('new state', {
-	            expands: [node._id, focus],
-	            focus: focus
-	          });
-
-	          me.setState({
-	            expands: [node._id, focus],
-	            focus: focus
-	          });
-	        }
-	      }
-	      this.token = PubSub.subscribe(node._id, mysubscriber);
-	    }
-	  }, {
-	    key: 'componentWillUnmount',
-	    value: function componentWillUnmount() {
-	      PubSub.unsubscribe(this.token);
-	    }
-	  }]);
-
-	  return NodeWrapper;
-	}(_react2.default.Component);
-
-	var NodeWithChildren = function NodeWithChildren(props) {
-	  console.log('NodeWithChildren render');
-	  var render = props.render;
-	  var node = props.node;
-	  var focus = props.focus;
-
-	  var others = _objectWithoutProperties(props, ['render', 'node', 'focus']);
-
-	  var vnode = { _type: "vnode", _p: node._id };
-	  return _react2.default.createElement(
-	    'div',
-	    { className: 'node' },
-	    _react2.default.createElement(
-	      'div',
-	      { className: cx("main", { focus: focus === node._id }) },
-	      render(node)
-	    ),
-	    _react2.default.createElement(
-	      'div',
-	      { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
-	      render(vnode),
-	      node._children.map(function (cnode) {
-	        return _react2.default.createElement(NodeWrapper, _extends({ key: cnode._id, node: cnode, render: render, focus: focus }, others));
-	      })
-	    )
-	  );
-	};
+	//     );
+	// }
 
 	// class NodeWithChildren extends React.Component {
 	//   static propTypes = {
@@ -932,70 +886,65 @@ webpackJsonp([0],{
 	//   }
 	// }
 
-	var Noder = function Noder(props) {
-	  var render = props.render;
-	  var node = props.node;
-	  var expands = props.expands;
-	  var focus = props.focus;
+	// const Noder=(props)=>{
+	//     const {render,node,expands,focus}=props;
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//         </div>
 
-	  return _react2.default.createElement(
-	    'div',
-	    { className: 'node' },
-	    _react2.default.createElement(
-	      'div',
-	      { className: cx("main", { focus: focus === node._id }) },
-	      render(node)
-	    )
-	  );
-	};
+	//     );
+	// }
 	var TreeBrowser = function TreeBrowser(props) {
-	  var render = props.render;
-	  var node = props.node;
+	        var node = props.node;
 
-	  var others = _objectWithoutProperties(props, ['render', 'node']);
+	        var others = _objectWithoutProperties(props, ['node']);
 
-	  var vnode = { _type: "vnode", _p: node._id };
-	  return _react2.default.createElement(
-	    'div',
-	    { className: 'node' },
-	    _react2.default.createElement(
-	      'div',
-	      { className: 'main' },
-	      render(node)
-	    ),
-	    _react2.default.createElement(
-	      'div',
-	      { className: 'children' },
-	      render(vnode),
-	      node._children.map(function (node) {
-	        return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node, render: render }, others));
-	      })
-	    )
-	  );
+	        var render = props.render;
+	        var focus = props.focus;
+
+	        var vnode = { _type: "vnode", _p: node._id };
+	        return _react2.default.createElement(
+	                'div',
+	                { className: 'node' },
+	                _react2.default.createElement(
+	                        'div',
+	                        { className: cx("main", { focus: focus === node._id }) },
+	                        render(node)
+	                ),
+	                _react2.default.createElement(
+	                        'div',
+	                        { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
+	                        render(vnode),
+	                        node._children.map(function (node) {
+	                                return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others));
+	                        })
+	                )
+	        );
 	};
 
-	var tree_browser = function (_React$Component2) {
-	  _inherits(tree_browser, _React$Component2);
+	var tree_browser = function (_React$Component) {
+	        _inherits(tree_browser, _React$Component);
 
-	  function tree_browser() {
-	    _classCallCheck(this, tree_browser);
+	        function tree_browser() {
+	                _classCallCheck(this, tree_browser);
 
-	    return _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).apply(this, arguments));
-	  }
+	                return _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).apply(this, arguments));
+	        }
 
-	  _createClass(tree_browser, [{
-	    key: 'render',
-	    value: function render() {
-	      var _props2 = this.props;
-	      var root = _props2.root;
+	        _createClass(tree_browser, [{
+	                key: 'render',
+	                value: function render() {
+	                        var _props = this.props;
+	                        var root = _props.root;
 
-	      var others = _objectWithoutProperties(_props2, ['root']);
+	                        var others = _objectWithoutProperties(_props, ['root']);
 
-	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others));
-	    }
-	  }]);
+	                        return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others));
+	                }
+	        }]);
 
-	  return tree_browser;
+	        return tree_browser;
 	}(_react2.default.Component);
 
 	exports.default = tree_browser;

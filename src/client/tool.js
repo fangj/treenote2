@@ -25,12 +25,12 @@ function expand(node,level){ //level用于控制展开的层级
     }
 }
 
-function has(arr,obj){
+function includes(arr,obj){
     return arr.indexOf(obj)>-1;
 }
 
 function expand2(node,expands=[]){ //expands用于控制展开的节点列表
-    if(node._link.children.length==0 || !has(expands,node._id) ){ //不做展开的2种情况。1.没有子节点。2，expands数组中没有此项
+    if(node._link.children.length==0 || !includes(expands,node._id) ){ //不做展开的2种情况。1.没有子节点。2，expands数组中没有此项
         var cloneNode=clone(node);
         cloneNode._children=[];
         return Promise.resolve(cloneNode);
