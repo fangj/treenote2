@@ -28,6 +28,14 @@ webpackJsonp([0],{
 
 	var tree = __webpack_require__(74)("_api");
 
+	function scroll2card(id) {
+	  var card = $("#" + id);
+	  var cardX = card.offset().left;
+	  var cardY = card.offset().top;
+	  // window.scrollTo(cardX-20,cardY-20);
+	  $('html,body').animate({ scrollLeft: cardX - 20, scrollTop: cardY - 20 }, 800);
+	}
+
 	function render(node, vtype) {
 	  if (node._type == 'vnode') {
 	    //虚节点,{_type:"vnode",_p:"pgid"}
@@ -50,8 +58,9 @@ webpackJsonp([0],{
 	  }
 	  return _react2.default.createElement(
 	    'div',
-	    { className: vtype, onClick: function onClick() {
+	    { id: node._id, className: vtype, onClick: function onClick(e) {
 	        PubSub.publish(node._link.p, { msg: 'focus', gid: node._id });
+	        scroll2card(node._id);
 	      } },
 	    _react2.default.createElement(
 	      'pre',
