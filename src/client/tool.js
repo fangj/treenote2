@@ -6,8 +6,31 @@ var cache={};//walkaround,由于连续两个相同的tree.lidpath2gid(ppath)调�
 function clone(obj){
     return JSON.parse(JSON.stringify(obj));
 }
+
 function expand(node,level){ //level用于控制展开的层级
     if(node._link.children.length==0 || level<=0 ){ //不做展开的2种情况。1.没有子节点。2，展开层级小于0
+        var cloneNode=clone(node);
+        cloneNode._children=[];
+        return Promise.resolve(cloneNode);
+    }else{
+        return tree.read_nodes(node._link.children)
+        .then(nodes=>{
+            const fnodes=nodes.map(node=>expand(node,level-1));
+            return Promise.all(fnodes).then(nodes=>{
+                var cloneNode=clone(node);
+                cloneNode._children=nodes||[]; //展开的节点放到_children中
+                return cloneNode;
+            })
+        })
+    }
+}
+
+function has(arr,obj){
+    return arr.indexOf(obj)>-1;
+}
+
+function expand2(node,expands=[]){ //expands用于控制展开的节点列表
+    if(node._link.children.length==0 || !has(expands,node._id) ){ //不做展开的2种情况。1.没有子节点。2，expands数组中没有此项
         var cloneNode=clone(node);
         cloneNode._children=[];
         return Promise.resolve(cloneNode);

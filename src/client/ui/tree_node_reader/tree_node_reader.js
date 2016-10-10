@@ -100,6 +100,17 @@ class Reader extends React.Component {
             });
     }
 
+    fetchBigNode2(gid,expands=[]){ //客户端展开，可利用缓存,用expands数组指示要展开的节点
+        // debugger;
+        return _tree.read(gid).then(node=>{
+                if(expands.length===0){
+                    return node;
+                }else{
+                    return treetool.expand2(node,expands);
+                }
+            });
+    }
+
 
 
     componentWillReceiveProps(nextProps) {

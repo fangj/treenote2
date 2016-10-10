@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 // import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
-import TreeBrowser from 'treenote2/src/client/ui/tree_browser2';
+import TreeBrowser from 'treenote2/src/client/ui/tree_browser3';
 import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 var PubSub =require('pubsub-js');
 
@@ -17,20 +17,27 @@ function render(node,vtype){
       });
     }}><div className="main">+{node._p}</div></div>
   }
-  return <div className={vtype} onClick={()=>{PubSub.publish(node._link.p,{msg:'focus',gid:node._id})}}><pre>{JSON.stringify(node,null,2)}</pre></div>
+  return <div className={vtype} onClick={()=>{PubSub.publish(node._link.p,{msg:'focus',gid:node._id})}}><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
 }
         
 // ReactDOM.render(
 //    <div>
-//    <TreeNodeReader tree={tree} view={props=><div>xx</div>} gid='0' level={1}/>
-//    <TreeNodeReader tree={tree} view={TreeBrowser} root='0' gid='0' render={render} subscribe={["updated"]} expands={['0']}/>
+//    <TreeNodeReader tree={tree} view={props=><div>xx</div>} gid='0' />
+//    <TreeNodeReader tree={tree} view={TreeBrowser} root='0' gid='0' render={render} subscribe={["updated"]} expands={['0']} level={2}/>
+//    </div>,
+//   document.getElementById('root')
+// );
+
+// ReactDOM.render(
+//    <div>
+//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
 //    </div>,
 //   document.getElementById('root')
 // );
 
 ReactDOM.render(
    <div>
-   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
+   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' level={3}/>
    </div>,
   document.getElementById('root')
 );

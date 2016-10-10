@@ -131,7 +131,7 @@ const TreeBrowser=(props)=>{
     return (
         <div className="node" >
           <div className="main">{render(node)}</div>
-          <div className="children">{render(vnode)}{node._children.map(node=><TreeBrowser node={node} render={render} {...others}/>)}</div>
+          <div className="children">{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} render={render} {...others}/>)}</div>
         </div>
         
     );
