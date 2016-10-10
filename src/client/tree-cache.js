@@ -25,7 +25,12 @@ function clone(obj){
   return JSON.parse(JSON.stringify(obj));
 }
 
-function read(gid) {
+function read(gid,force=false) {
+  if(!gid){
+    console.warn('read:invalid param',gid);
+    return Promise.resolve(null);
+  }
+  if (!force && cache.has(gid)) {return Promise.resolve(cache.get(gid));}
   return _api.read(gid).then(node => {
     cache.set(node._id,node);
     return node;

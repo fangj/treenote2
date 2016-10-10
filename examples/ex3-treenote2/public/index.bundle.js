@@ -968,6 +968,15 @@ webpackJsonp([0],{
 	}
 
 	function read(gid) {
+	  var force = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	  if (!gid) {
+	    console.warn('read:invalid param', gid);
+	    return Promise.resolve(null);
+	  }
+	  if (!force && cache.has(gid)) {
+	    return Promise.resolve(cache.get(gid));
+	  }
 	  return _api.read(gid).then(function (node) {
 	    cache.set(node._id, node);
 	    return node;
