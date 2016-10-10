@@ -1,4 +1,6 @@
 var agent = require('superagent-promise')(require('superagent'), Promise);
+
+var prefix;
 const api = {
   read,
   read_nodes,
@@ -10,14 +12,11 @@ const api = {
   mv_as_brother,
   read_big_node
 };
-module.exports = factory;
-
-var prefix;
-
 function factory(_prefix) {
   prefix = _prefix;
   return api;
 }
+module.exports = factory;
 
 function read(gid) {
   return agent.get(prefix + '/' + gid).then(res => res.body);

@@ -33,7 +33,7 @@ class Reader extends React.Component {
         if(!node){
             return null;
         }else{
-            const {view,...others}=this.props;
+            const {view,gid,...others}=this.props;
             const View=view;
             return <View node={node} {...others}/>
         }
@@ -79,17 +79,17 @@ class Reader extends React.Component {
     _fetchData(props){
         const {gid,level,path}=props;
         if(gid!==undefined){
-            return this.fetchDataByGid(gid,level);
+            return this.fetchBigNode(gid,level);
         }else if(path){
-            return _tree.lidpath2gid(path).then(gid=>this.fetchDataByGid(gid,level));
+            return _tree.lidpath2gid(path).then(gid=>this.fetchBigNode(gid,level));
         }   
     }
 
-    fetchDataByGid(gid,level){ //服务器端展开，没有缓存。未来可以拆解到缓存中
+    _fetchBigNode(gid,level){ //服务器端展开，没有缓存。未来可以拆解到缓存中
         return _tree.read_big_node(gid,level);
     }
 
-    _fetchDataByGid(gid,level){ //客户端展开，可利用缓存
+    fetchBigNode(gid,level){ //客户端展开，可利用缓存
         // debugger;
         return _tree.read(gid).then(node=>{
                 if(!level){

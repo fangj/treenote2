@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 // import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
-import TreeBrowser2 from 'treenote2/src/client/ui/tree_browser2';
+import TreeBrowser from 'treenote2/src/client/ui/tree_browser2';
 import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 var PubSub =require('pubsub-js');
 
-var tree=require('treenote2/src/client/tree.js')("_api");
+var tree=require('treenote2/src/client/tree-cache.js')("_api");
 
 function render(node,vtype){
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
@@ -30,7 +30,7 @@ function render(node,vtype){
 
 ReactDOM.render(
    <div>
-   <TreeBrowser2 tree={tree} render={render} root='0' gid='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
+   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
    </div>,
   document.getElementById('root')
 );

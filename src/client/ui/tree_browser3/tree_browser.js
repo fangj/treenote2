@@ -125,12 +125,22 @@ const Noder=(props)=>{
         
     );
 }
-
+const TreeBrowser=(props)=>{
+    const {render,node,...others}=props;
+    const vnode={_type:"vnode",_p:node._id}
+    return (
+        <div className="node" >
+          <div className="main">{render(node)}</div>
+          <div className="children">{render(vnode)}{node._children.map(node=><TreeBrowser node={node} render={render} {...others}/>)}</div>
+        </div>
+        
+    );
+}
 
 
 export default class tree_browser extends React.Component {
   render() {
-  	var {tree,root,gid,...others}=this.props;
-  	return <TreeNodeReader tree={tree} gid={root} level={0} view={NodeWrapper} focus={gid} {...others}/>
+  	var {root,...others}=this.props;
+  	return <TreeNodeReader gid={root}  view={TreeBrowser}  {...others}/>
   }
 }
