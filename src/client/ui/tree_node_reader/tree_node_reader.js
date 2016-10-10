@@ -77,9 +77,13 @@ class Reader extends React.Component {
     }
 
     _fetchData(props){
-        const {gid,level,path}=props;
+        const {gid,level,path,expands}=props;
         if(gid!==undefined){
-            return this.fetchBigNode(gid,level);
+            if(expands){
+                return this.fetchBigNode2(gid,expands);//有expands则忽略level
+            }else{
+                return this.fetchBigNode(gid,level);
+            }
         }else if(path){
             return _tree.lidpath2gid(path).then(gid=>this.fetchBigNode(gid,level));
         }   

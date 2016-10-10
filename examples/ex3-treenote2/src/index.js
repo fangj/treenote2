@@ -28,16 +28,16 @@ function render(node,vtype){
 //   document.getElementById('root')
 // );
 
-// ReactDOM.render(
-//    <div>
-//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
-//    </div>,
-//   document.getElementById('root')
-// );
-
 ReactDOM.render(
    <div>
-   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' level={3}/>
+   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
    </div>,
   document.getElementById('root')
 );
+
+// ReactDOM.render(
+//    <div>
+//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' level={3}/>
+//    </div>,
+//   document.getElementById('root')
+// );

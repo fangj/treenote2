@@ -37,7 +37,7 @@ function expand2(node,expands=[]){ //expands用于控制展开的节点列表
     }else{
         return tree.read_nodes(node._link.children)
         .then(nodes=>{
-            const fnodes=nodes.map(node=>expand(node,level-1));
+            const fnodes=nodes.map(node=>expand2(node,expands));
             return Promise.all(fnodes).then(nodes=>{
                 var cloneNode=clone(node);
                 cloneNode._children=nodes||[]; //展开的节点放到_children中
@@ -66,7 +66,7 @@ function  expandToRoot(gids,root=0){
 module.exports=function(_tree){
     tree=_tree;
     return {
-        expand,
+        expand,expand2,
         expandToRoot
     }
 }

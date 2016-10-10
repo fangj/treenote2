@@ -69,18 +69,18 @@ webpackJsonp([0],{
 	//   document.getElementById('root')
 	// );
 
-	// ReactDOM.render(
-	//    <div>
-	//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
-	//    </div>,
-	//   document.getElementById('root')
-	// );
-
 	_reactDom2.default.render(_react2.default.createElement(
 	  'div',
 	  null,
-	  _react2.default.createElement(_tree_browser2.default, { tree: tree, render: render, root: '0', focus: 'aEPi425BJDu0Nw3O', level: 3 })
+	  _react2.default.createElement(_tree_browser2.default, { tree: tree, render: render, root: '0', focus: 'aEPi425BJDu0Nw3O', expands: ['0', 'aEPi425BJDu0Nw3O', 'fp9rDCkZC4qekBRg', 'e5jEsZ9cf31Vy7T5'] })
 	), document.getElementById('root'));
+
+	// ReactDOM.render(
+	//    <div>
+	//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' level={3}/>
+	//    </div>,
+	//   document.getElementById('root')
+	// );
 
 /***/ },
 
@@ -197,9 +197,14 @@ webpackJsonp([0],{
 	            var gid = props.gid;
 	            var level = props.level;
 	            var path = props.path;
+	            var expands = props.expands;
 
 	            if (gid !== undefined) {
-	                return this.fetchBigNode(gid, level);
+	                if (expands) {
+	                    return this.fetchBigNode2(gid, expands); //有expands则忽略level
+	                } else {
+	                    return this.fetchBigNode(gid, level);
+	                }
 	            } else if (path) {
 	                return _tree.lidpath2gid(path).then(function (gid) {
 	                    return _this3.fetchBigNode(gid, level);
@@ -370,7 +375,7 @@ webpackJsonp([0],{
 	    } else {
 	        return tree.read_nodes(node._link.children).then(function (nodes) {
 	            var fnodes = nodes.map(function (node) {
-	                return expand(node, level - 1);
+	                return expand2(node, expands);
 	            });
 	            return Promise.all(fnodes).then(function (nodes) {
 	                var cloneNode = clone(node);
@@ -403,7 +408,7 @@ webpackJsonp([0],{
 	module.exports = function (_tree) {
 	    tree = _tree;
 	    return {
-	        expand: expand,
+	        expand: expand, expand2: expand2,
 	        expandToRoot: expandToRoot
 	    };
 	};
