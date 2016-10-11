@@ -127,12 +127,12 @@ var PubSub =require ("pubsub-js");
 // }
 const TreeBrowser=(props)=>{
     const {node,...others}=props;
-    const {render,focus}=props;
+    const {render,focus,expands}=props;
     const vnode={_type:"vnode",_p:node._id}
     return (
         <div className={cx("node",{focus:focus===node._id})} >
           <div className="main">{render(node)}</div>
-          <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}</div>
+          {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}</div>}
         </div>
         
     );

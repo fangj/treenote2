@@ -266,6 +266,7 @@ webpackJsonp([0],[
 
 	  var render = props.render;
 	  var focus = props.focus;
+	  var expands = props.expands;
 
 	  var vnode = { _type: "vnode", _p: node._id };
 	  return _react2.default.createElement(
@@ -276,7 +277,7 @@ webpackJsonp([0],[
 	      { className: 'main' },
 	      render(node)
 	    ),
-	    _react2.default.createElement(
+	    !_.includes(expands, node._id) ? null : _react2.default.createElement(
 	      'div',
 	      { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
 	      render(vnode),
