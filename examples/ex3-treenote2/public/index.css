@@ -45,3 +45,10 @@
 .main:hover .menu {
   display: block;
 }
+li.placeholder {
+  background: #fff078;
+}
+li.placeholder:before {
+  content: "Drop here";
+  color: #e1d25a;
+}

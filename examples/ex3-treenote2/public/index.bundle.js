@@ -54,9 +54,9 @@ webpackJsonp([0],[
 	  }
 	  console.log('s', sourceID, 't', target.id, ev.target);
 	  // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
-
-	  var targetNode = target.parentElement.parentElement;
-	  var sourceNode = document.getElementById(sourceID).parentElement.parentElement;
+	  if (target.id == '0') return; //不能移动为根节点的兄弟
+	  var targetNode = target.parentElement.parentElement.parentElement;
+	  var sourceNode = document.getElementById(sourceID).parentElement.parentElement.parentElement;
 	  // targetNode.parentElement.appendChild(sourceNode);
 	  targetNode.parentElement.insertBefore(sourceNode, targetNode);
 	}
