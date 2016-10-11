@@ -13,7 +13,7 @@ function scroll2card(id){
   var cardY=card.offset().top;
   // window.scrollTo(cardX-20,cardY-20);
   // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
-  $('html,body').animate({scrollLeft:cardX-20}, 800); //只改变横坐标
+  $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
 
 }
 
@@ -30,7 +30,8 @@ function render(node,vtype){
   return <div id={node._id} onClick={(e)=>{
     console.log("node",node)
       PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
-      scroll2card(node._id);
+      // scroll2card(node._id);
+      setTimeout(_=>scroll2card(node._id),1000)
   }} draggable="true"><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
 }
         
