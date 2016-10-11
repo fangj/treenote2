@@ -23,12 +23,12 @@
   width: 800px;
 }
 .node.focus > .main {
-  border: 1px solid green;
+  border: 2px solid black;
 }
 .children.focus > .node {
   width: 800px;
 }
-* {
+.node {
   transition-duration: 0.8s;
 }
 .menu {
@@ -37,7 +37,7 @@
   margin-left: -160px;
   bottom: 0;
   width: 160px;
-  height: 30px;
+  height: 24px;
   display: none;
   box-sizing: border-box;
   text-align: right;

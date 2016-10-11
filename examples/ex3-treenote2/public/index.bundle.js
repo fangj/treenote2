@@ -186,7 +186,7 @@ webpackJsonp([0],[
 	    ),
 	    _react2.default.createElement(
 	      'button',
-	      { className: 'btn btn-danger btn-xs', onClick: function onClick() {
+	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
 	          var sure = confirm("are you sure?");
 	          console.log(sure);
 	          if (sure) {

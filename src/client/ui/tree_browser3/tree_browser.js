@@ -36,7 +36,7 @@ const menu=(node,tree,treetool)=>{
                 console.log(clipboard)
                 paste(clipboard,node._id,tree,treetool);
               }}><i className="fa fa-paste"></i></button>
-              <button className="btn btn-danger btn-xs"  onClick={()=>{
+              <button className="btn btn-default btn-xs"  onClick={()=>{
                 var sure=confirm("are you sure?")
                 console.log(sure);
                 if(sure){
