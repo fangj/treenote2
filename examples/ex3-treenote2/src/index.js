@@ -14,7 +14,6 @@ function scroll2card(id){
   // window.scrollTo(cardX-20,cardY-20);
   // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
   $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
-
 }
 
 function dragOver(ev)
@@ -61,7 +60,7 @@ function render(node,vtype){
       console.log("node",node)
         PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
         // scroll2card(node._id);
-        setTimeout(_=>scroll2card(node._id),1000)
+        // setTimeout(_=>scroll2card(node._id),1000)
     }} 
     draggable="true" onDragStart={drag}  
     onDrop={drop} onDragOver={dragOver} >

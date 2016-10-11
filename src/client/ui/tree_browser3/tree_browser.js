@@ -7,6 +7,14 @@ var PubSub =require ("pubsub-js");
 
 var clipboard;//剪贴板，用于存放当前剪切的node id
 
+function scroll2card(id){
+  if(!window.$)return;
+  var card=$("#"+id);
+  if(!card)return;
+  var cardX=card.offset().left;
+  $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
+}
+
 function isDescendant(target,source,treetool){ //check whether target is  descendant of source
   return treetool.expandToRoot([target],source).then(idpath=>{
     return idpath.indexOf(source)>-1;
@@ -91,6 +99,10 @@ export default class tree_browser extends React.Component {
      }
     }
     this.token=PubSub.subscribe("TreeBrowser",mysubscriber)
+  }
+  componentDidUpdate(prevProps, prevState) {
+    const {focus}=this.state;
+    scroll2card(focus);
   }
 }
 
