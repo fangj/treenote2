@@ -30,7 +30,7 @@ function render(node,vtype){
   return <div id={node._id} className={vtype} onClick={(e)=>{
     console.log("node",node)
       PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
-      // scroll2card(node._id);
+      scroll2card(node._id);
   }}><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
 }
         

@@ -61,7 +61,7 @@ webpackJsonp([0],[
 	    { id: node._id, className: vtype, onClick: function onClick(e) {
 	        console.log("node", node);
 	        PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
-	        // scroll2card(node._id);
+	        scroll2card(node._id);
 	      } },
 	    _react2.default.createElement(
 	      'pre',
