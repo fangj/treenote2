@@ -1,6 +1,5 @@
-webpackJsonp([0],{
-
-/***/ 0:
+webpackJsonp([0],[
+/* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -13,7 +12,7 @@ webpackJsonp([0],{
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _tree_browser = __webpack_require__(70);
+	var _tree_browser = __webpack_require__(3);
 
 	var _tree_browser2 = _interopRequireDefault(_tree_browser);
 
@@ -26,17 +25,19 @@ webpackJsonp([0],{
 	// import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
 	var PubSub = __webpack_require__(8);
 
-	var tree = __webpack_require__(74)("_api");
+	var tree = __webpack_require__(19)("_api");
 
 	function scroll2card(id) {
 	  var card = $("#" + id);
 	  var cardX = card.offset().left;
 	  var cardY = card.offset().top;
 	  // window.scrollTo(cardX-20,cardY-20);
-	  $('html,body').animate({ scrollLeft: cardX - 20, scrollTop: cardY - 20 }, 800);
+	  // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
+	  $('html,body').animate({ scrollLeft: cardX - 20 }, 800); //只改变横坐标
 	}
 
 	function render(node, vtype) {
+	  //新建节点
 	  if (node._type == 'vnode') {
 	    //虚节点,{_type:"vnode",_p:"pgid"}
 	    return _react2.default.createElement(
@@ -44,8 +45,7 @@ webpackJsonp([0],{
 	      { className: 'node', onClick: function onClick() {
 	          tree.mk_son_by_data(node._p, "new").then(function (_) {
 	            console.log("publish updated ");
-	            // PubSub.publish('updated');
-	            PubSub.publish(node._p, { msg: "refresh" });
+	            PubSub.publish("TreeBrowser", { msg: "refresh" });
 	          });
 	        } },
 	      _react2.default.createElement(
@@ -59,8 +59,9 @@ webpackJsonp([0],{
 	  return _react2.default.createElement(
 	    'div',
 	    { id: node._id, className: vtype, onClick: function onClick(e) {
-	        PubSub.publish(node._link.p, { msg: 'focus', gid: node._id });
-	        scroll2card(node._id);
+	        console.log("node", node);
+	        PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
+	        // scroll2card(node._id);
 	      } },
 	    _react2.default.createElement(
 	      'pre',
@@ -92,8 +93,264 @@ webpackJsonp([0],{
 	// );
 
 /***/ },
+/* 1 */,
+/* 2 */,
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
 
-/***/ 5:
+	'use strict';
+
+	module.exports = __webpack_require__(4);
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _tree_node_reader = __webpack_require__(5);
+
+	var _tree_node_reader2 = _interopRequireDefault(_tree_node_reader);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+	var cx = __webpack_require__(12);
+	var _ = __webpack_require__(13);
+	__webpack_require__(15);
+	var PubSub = __webpack_require__(8);
+
+	// class NodeWrapper extends  React.Component {
+	//   constructor(props) {
+	//     super(props);
+	//     const {expands,focus}=this.props;
+	//     this.state={expands:expands||[],focus}
+	//   }
+
+	//   render() {
+	// 	  const {gid,node,render,tree}=this.props;
+	// 	  const {expands,focus}=this.state;
+	// 		var expand=false;//是否要展开当前节点？默认不展开
+	// 		if(expands.length>0){
+	// 			var [first,...remain]=expands;
+	// 			if(first===node._id){
+	// 				expand=true;//当前结点在要展开的节点中，展开
+	// 			}
+	// 		}
+	// 		this.state.expand=expand;
+	// 	  if(expand){
+	// 	  	return <TreeNodeReader  tree={tree} gid={node._id} view={NodeWithChildren}  render={render} focus={focus} level={1} expands={remain}/>
+	// 	  }else{
+	// 	  	return <Noder  tree={tree} node={node}  render={render}  focus={focus} />
+	// 	  }
+	//   }	
+
+	//   componentDidMount() {
+	//   	const me=this;
+	//   	const {node}=this.props;
+	//   	function mysubscriber(gid,data){
+	//   		console.log('got',gid,data);
+	//   		if(data.msg=='focus'){
+	//   			const focus=data.gid;
+
+	//   			console.log('old state',me.state);
+	//   			console.log('new state',{
+	//   				expands:[node._id,focus],
+	//   				focus
+	//   			});
+
+	//   			me.setState({
+	//   				expands:[node._id,focus],
+	//   				focus
+	//   			})
+	//   		}
+	//   	}
+	//   	this.token=PubSub.subscribe(node._id,mysubscriber)
+	//   }
+	//   componentWillUnmount() {
+	//   	PubSub.unsubscribe(this.token);
+	//   }
+
+	// }
+
+	// const NodeWithChildren=(props)=>{
+	// 	console.log('NodeWithChildren render')
+	//     const {render,node,focus,...others}=props;
+	//     const vnode={_type:"vnode",_p:node._id};
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
+	//         </div>
+
+	//     );
+	// }
+
+	// class NodeWithChildren extends React.Component {
+	//   static propTypes = {
+	//     node: React.PropTypes.object,
+	//   };
+
+	//   constructor(props) {
+	//     super(props);
+	//   }
+
+	//   render() {
+	//   	console.log('NodeWithChildren render')
+	//     const me=this;
+	//     const {render,node,focus,...others}=me.props;
+	//     const vnode={_type:"vnode",_p:node._id};
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
+	//         </div>
+
+	//     );
+	//   }
+	// }
+
+	// class Noder extends React.Component {
+	//   static propTypes = {
+	//     node: React.PropTypes.object,
+	//   };
+
+	//   constructor(props) {
+	//     super(props);
+	//   }
+
+	//   render() {
+	//     const me=this;
+	//     const {render,node,expands,focus}=me.props;
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//         </div>
+
+	//     );
+	//   }
+	// }
+
+	// const Noder=(props)=>{
+	//     const {render,node,expands,focus}=props;
+	//     return (
+	//         <div className="node" >
+	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+	//         </div>
+
+	//     );
+	// }
+	var TreeBrowser = function TreeBrowser(props) {
+	  var node = props.node;
+
+	  var others = _objectWithoutProperties(props, ['node']);
+
+	  var render = props.render;
+	  var focus = props.focus;
+
+	  var vnode = { _type: "vnode", _p: node._id };
+	  return _react2.default.createElement(
+	    'div',
+	    { className: cx("node", { focus: focus === node._id }) },
+	    _react2.default.createElement(
+	      'div',
+	      { className: 'main' },
+	      render(node)
+	    ),
+	    _react2.default.createElement(
+	      'div',
+	      { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
+	      render(vnode),
+	      node._children.map(function (node) {
+	        return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others));
+	      })
+	    )
+	  );
+	};
+
+	var tree_browser = function (_React$Component) {
+	  _inherits(tree_browser, _React$Component);
+
+	  function tree_browser(props) {
+	    _classCallCheck(this, tree_browser);
+
+	    var _this = _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).call(this, props));
+
+	    _this.state = props;
+	    return _this;
+	  }
+
+	  _createClass(tree_browser, [{
+	    key: 'render',
+	    value: function render() {
+	      var _state = this.state;
+	      var root = _state.root;
+
+	      var others = _objectWithoutProperties(_state, ['root']);
+
+	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others));
+	    }
+	  }, {
+	    key: 'componentDidMount',
+	    value: function componentDidMount() {
+	      var me = this;
+	      var node = this.props.node;
+
+	      function mysubscriber(target, data) {
+	        console.log('got', target, data);
+	        if (data.msg == 'focus') {
+	          var focus = data.gid;
+	          var pgid = data.pgid;
+	          var expands = me.state.expands;
+
+	          expands = buildExpandsWithFocus(expands, focus, pgid);
+	          console.log('old state', me.state);
+	          console.log('new state', { focus: focus, expands: expands });
+
+	          me.setState({ focus: focus, expands: expands });
+	        }
+	      }
+	      this.token = PubSub.subscribe("TreeBrowser", mysubscriber);
+	    }
+	  }]);
+
+	  return tree_browser;
+	}(_react2.default.Component);
+
+	exports.default = tree_browser;
+
+
+	function buildExpandsWithFocus(expands, focus, pgid) {
+	  var idx = expands.indexOf(pgid);
+	  if (idx < 0) {
+	    return expands;
+	  } //没找到直接返回
+	  expands = expands.slice(0, idx + 1); //父节点之前
+	  expands.push(focus); //加入新的节点
+	  return expands;
+	}
+
+/***/ },
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -101,8 +358,7 @@ webpackJsonp([0],{
 	module.exports = __webpack_require__(6);
 
 /***/ },
-
-/***/ 6:
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -296,8 +552,7 @@ webpackJsonp([0],{
 	module.exports = Reader;
 
 /***/ },
-
-/***/ 7:
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -326,15 +581,13 @@ webpackJsonp([0],{
 	};
 
 /***/ },
-
-/***/ 8:
+/* 8 */
 /***/ function(module, exports) {
 
 	module.exports = PubSub;
 
 /***/ },
-
-/***/ 9:
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -423,8 +676,7 @@ webpackJsonp([0],{
 	};
 
 /***/ },
-
-/***/ 10:
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -655,324 +907,25 @@ webpackJsonp([0],{
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)))
 
 /***/ },
-
-/***/ 19:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var agent = __webpack_require__(20)(__webpack_require__(21), Promise);
-
-	var prefix;
-	var api = {
-	  read: read,
-	  read_nodes: read_nodes,
-	  mk_son_by_data: mk_son_by_data,
-	  mk_brother_by_data: mk_brother_by_data,
-	  remove: remove,
-	  update: update,
-	  mv_as_son: mv_as_son,
-	  mv_as_brother: mv_as_brother,
-	  read_big_node: read_big_node
-	};
-	function factory(_prefix) {
-	  prefix = _prefix;
-	  return api;
-	}
-	module.exports = factory;
-
-	function read(gid) {
-	  return agent.get(prefix + '/' + gid).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function read_nodes(gids) {
-	  return agent.post(prefix + '/nodes/', gids).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function mk_son_by_data(pgid, data) {
-	  return agent.post(prefix + '/mk/son/' + pgid, data).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function mk_brother_by_data(bgid, data) {
-	  return agent.post(prefix + '/mk/brother/' + bgid, data).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function remove(gid) {
-	  return agent.del(prefix + '/' + gid).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function update(gid, data) {
-	  return agent.put(prefix + '/' + gid, data).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function mv_as_son(sgid, dgid) {
-	  return agent.post(prefix + '/mv/' + sgid + '/son/' + dgid).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function mv_as_brother(sgid, dgid) {
-	  return agent.post(prefix + '/mv/' + sgid + '/brother/' + dgid).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-	function read_big_node(gid) {
-	  var level = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
-
-	  return agent.get(prefix + '/bignode/' + gid + '/' + level).then(function (res) {
-	    return res.body;
-	  });
-	}
-
-/***/ },
-
-/***/ 70:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = __webpack_require__(71);
-
-/***/ },
-
-/***/ 71:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	        value: true
-	});
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _tree_node_reader = __webpack_require__(5);
-
-	var _tree_node_reader2 = _interopRequireDefault(_tree_node_reader);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
-
-	var cx = __webpack_require__(12);
-	var _ = __webpack_require__(13);
-	__webpack_require__(72);
-	var PubSub = __webpack_require__(8);
-
-	// class NodeWrapper extends  React.Component {
-	//   constructor(props) {
-	//     super(props);
-	//     const {expands,focus}=this.props;
-	//     this.state={expands:expands||[],focus}
-	//   }
-
-	//   render() {
-	// 	  const {gid,node,render,tree}=this.props;
-	// 	  const {expands,focus}=this.state;
-	// 		var expand=false;//是否要展开当前节点？默认不展开
-	// 		if(expands.length>0){
-	// 			var [first,...remain]=expands;
-	// 			if(first===node._id){
-	// 				expand=true;//当前结点在要展开的节点中，展开
-	// 			}
-	// 		}
-	// 		this.state.expand=expand;
-	// 	  if(expand){
-	// 	  	return <TreeNodeReader  tree={tree} gid={node._id} view={NodeWithChildren}  render={render} focus={focus} level={1} expands={remain}/>
-	// 	  }else{
-	// 	  	return <Noder  tree={tree} node={node}  render={render}  focus={focus} />
-	// 	  }
-	//   }	
-
-	//   componentDidMount() {
-	//   	const me=this;
-	//   	const {node}=this.props;
-	//   	function mysubscriber(gid,data){
-	//   		console.log('got',gid,data);
-	//   		if(data.msg=='focus'){
-	//   			const focus=data.gid;
-
-	//   			console.log('old state',me.state);
-	//   			console.log('new state',{
-	//   				expands:[node._id,focus],
-	//   				focus
-	//   			});
-
-	//   			me.setState({
-	//   				expands:[node._id,focus],
-	//   				focus
-	//   			})
-	//   		}
-	//   	}
-	//   	this.token=PubSub.subscribe(node._id,mysubscriber)
-	//   }
-	//   componentWillUnmount() {
-	//   	PubSub.unsubscribe(this.token);
-	//   }
-
-	// }
-
-	// const NodeWithChildren=(props)=>{
-	// 	console.log('NodeWithChildren render')
-	//     const {render,node,focus,...others}=props;
-	//     const vnode={_type:"vnode",_p:node._id};
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
-	//         </div>
-
-	//     );
-	// }
-
-	// class NodeWithChildren extends React.Component {
-	//   static propTypes = {
-	//     node: React.PropTypes.object,
-	//   };
-
-	//   constructor(props) {
-	//     super(props);
-	//   }
-
-	//   render() {
-	//   	console.log('NodeWithChildren render')
-	//     const me=this;
-	//     const {render,node,focus,...others}=me.props;
-	//     const vnode={_type:"vnode",_p:node._id};
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
-	//         </div>
-
-	//     );
-	//   }
-	// }
-
-	// class Noder extends React.Component {
-	//   static propTypes = {
-	//     node: React.PropTypes.object,
-	//   };
-
-	//   constructor(props) {
-	//     super(props);
-	//   }
-
-	//   render() {
-	//     const me=this;
-	//     const {render,node,expands,focus}=me.props;
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//         </div>
-
-	//     );
-	//   }
-	// }
-
-	// const Noder=(props)=>{
-	//     const {render,node,expands,focus}=props;
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//         </div>
-
-	//     );
-	// }
-	var TreeBrowser = function TreeBrowser(props) {
-	        var node = props.node;
-
-	        var others = _objectWithoutProperties(props, ['node']);
-
-	        var render = props.render;
-	        var focus = props.focus;
-
-	        var vnode = { _type: "vnode", _p: node._id };
-	        return _react2.default.createElement(
-	                'div',
-	                { className: 'node' },
-	                _react2.default.createElement(
-	                        'div',
-	                        { className: cx("main", { focus: focus === node._id }) },
-	                        render(node)
-	                ),
-	                _react2.default.createElement(
-	                        'div',
-	                        { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
-	                        render(vnode),
-	                        node._children.map(function (node) {
-	                                return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others));
-	                        })
-	                )
-	        );
-	};
-
-	var tree_browser = function (_React$Component) {
-	        _inherits(tree_browser, _React$Component);
-
-	        function tree_browser() {
-	                _classCallCheck(this, tree_browser);
-
-	                return _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).apply(this, arguments));
-	        }
-
-	        _createClass(tree_browser, [{
-	                key: 'render',
-	                value: function render() {
-	                        var _props = this.props;
-	                        var root = _props.root;
-
-	                        var others = _objectWithoutProperties(_props, ['root']);
-
-	                        return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others));
-	                }
-	        }]);
-
-	        return tree_browser;
-	}(_react2.default.Component);
-
-	exports.default = tree_browser;
-
-/***/ },
-
-/***/ 72:
+/* 11 */,
+/* 12 */,
+/* 13 */,
+/* 14 */,
+/* 15 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-
-/***/ 74:
+/* 16 */,
+/* 17 */,
+/* 18 */,
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var LRU = __webpack_require__(75),
+	var LRU = __webpack_require__(20),
 	    cache = LRU(5000);
 	var _ = __webpack_require__(13);
 
@@ -989,7 +942,7 @@ webpackJsonp([0],{
 	  read_big_node: read_big_node
 	};
 	function factory(_prefix) {
-	  _api = __webpack_require__(19)(_prefix);
+	  _api = __webpack_require__(27)(_prefix);
 	  return api;
 	}
 	module.exports = factory;
@@ -1145,19 +1098,18 @@ webpackJsonp([0],{
 	}
 
 /***/ },
-
-/***/ 75:
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = LRUCache
 
 	// This will be a proper iterable 'Map' in engines that support it,
 	// or a fakey-fake PseudoMap in older versions.
-	var Map = __webpack_require__(76)
-	var util = __webpack_require__(78)
+	var Map = __webpack_require__(21)
+	var util = __webpack_require__(23)
 
 	// A linked list to keep track of recently-used-ness
-	var Yallist = __webpack_require__(81)
+	var Yallist = __webpack_require__(26)
 
 	// use symbols if possible, otherwise just _props
 	var symbols = {}
@@ -1621,8 +1573,7 @@ webpackJsonp([0],{
 
 
 /***/ },
-
-/***/ 76:
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {if (process.env.npm_package_name === 'pseudomap' &&
@@ -1632,14 +1583,13 @@ webpackJsonp([0],{
 	if (typeof Map === 'function' && !process.env.TEST_PSEUDOMAP) {
 	  module.exports = Map
 	} else {
-	  module.exports = __webpack_require__(77)
+	  module.exports = __webpack_require__(22)
 	}
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)))
 
 /***/ },
-
-/***/ 77:
+/* 22 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = Object.prototype.hasOwnProperty
@@ -1758,8 +1708,7 @@ webpackJsonp([0],{
 
 
 /***/ },
-
-/***/ 78:
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -2287,7 +2236,7 @@ webpackJsonp([0],{
 	}
 	exports.isPrimitive = isPrimitive;
 
-	exports.isBuffer = __webpack_require__(79);
+	exports.isBuffer = __webpack_require__(24);
 
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
@@ -2331,7 +2280,7 @@ webpackJsonp([0],{
 	 *     prototype.
 	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(80);
+	exports.inherits = __webpack_require__(25);
 
 	exports._extend = function(origin, add) {
 	  // Don't do anything if add isn't an object
@@ -2352,8 +2301,7 @@ webpackJsonp([0],{
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(11)))
 
 /***/ },
-
-/***/ 79:
+/* 24 */
 /***/ function(module, exports) {
 
 	module.exports = function isBuffer(arg) {
@@ -2364,8 +2312,7 @@ webpackJsonp([0],{
 	}
 
 /***/ },
-
-/***/ 80:
+/* 25 */
 /***/ function(module, exports) {
 
 	if (typeof Object.create === 'function') {
@@ -2394,8 +2341,7 @@ webpackJsonp([0],{
 
 
 /***/ },
-
-/***/ 81:
+/* 26 */
 /***/ function(module, exports) {
 
 	module.exports = Yallist
@@ -2760,6 +2706,87 @@ webpackJsonp([0],{
 	}
 
 
-/***/ }
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
 
-});
+	'use strict';
+
+	var agent = __webpack_require__(28)(__webpack_require__(29), Promise);
+
+	var prefix;
+	var api = {
+	  read: read,
+	  read_nodes: read_nodes,
+	  mk_son_by_data: mk_son_by_data,
+	  mk_brother_by_data: mk_brother_by_data,
+	  remove: remove,
+	  update: update,
+	  mv_as_son: mv_as_son,
+	  mv_as_brother: mv_as_brother,
+	  read_big_node: read_big_node
+	};
+	function factory(_prefix) {
+	  prefix = _prefix;
+	  return api;
+	}
+	module.exports = factory;
+
+	function read(gid) {
+	  return agent.get(prefix + '/' + gid).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function read_nodes(gids) {
+	  return agent.post(prefix + '/nodes/', gids).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function mk_son_by_data(pgid, data) {
+	  return agent.post(prefix + '/mk/son/' + pgid, data).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function mk_brother_by_data(bgid, data) {
+	  return agent.post(prefix + '/mk/brother/' + bgid, data).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function remove(gid) {
+	  return agent.del(prefix + '/' + gid).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function update(gid, data) {
+	  return agent.put(prefix + '/' + gid, data).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function mv_as_son(sgid, dgid) {
+	  return agent.post(prefix + '/mv/' + sgid + '/son/' + dgid).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function mv_as_brother(sgid, dgid) {
+	  return agent.post(prefix + '/mv/' + sgid + '/brother/' + dgid).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+	function read_big_node(gid) {
+	  var level = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+
+	  return agent.get(prefix + '/bignode/' + gid + '/' + level).then(function (res) {
+	    return res.body;
+	  });
+	}
+
+/***/ }
+]);

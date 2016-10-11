@@ -12,22 +12,25 @@ function scroll2card(id){
   var cardX=card.offset().left;
   var cardY=card.offset().top;
   // window.scrollTo(cardX-20,cardY-20);
-  $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
+  // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
+  $('html,body').animate({scrollLeft:cardX-20}, 800); //只改变横坐标
+
 }
 
 function render(node,vtype){
+  //新建节点
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
     return <div className="node" onClick={()=>{
       tree.mk_son_by_data(node._p,"new").then(_=>{
         console.log("publish updated ")
-        // PubSub.publish('updated');
-        PubSub.publish(node._p,{msg:"refresh"});
+        PubSub.publish("TreeBrowser",{msg:"refresh"});
       });
     }}><div className="main">+{node._p}</div></div>
   }
   return <div id={node._id} className={vtype} onClick={(e)=>{
-      PubSub.publish(node._link.p,{msg:'focus',gid:node._id})
-      scroll2card(node._id);
+    console.log("node",node)
+      PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
+      // scroll2card(node._id);
   }}><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
 }
         
@@ -40,7 +43,7 @@ function render(node,vtype){
 // );
 
 ReactDOM.render(
-   <div>
+   <div >
    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
    </div>,
   document.getElementById('root')

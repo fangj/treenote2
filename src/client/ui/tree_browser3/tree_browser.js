@@ -130,8 +130,8 @@ const TreeBrowser=(props)=>{
     const {render,focus}=props;
     const vnode={_type:"vnode",_p:node._id}
     return (
-        <div className="node" >
-          <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
+        <div className={cx("node",{focus:focus===node._id})} >
+          <div className="main">{render(node)}</div>
           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}</div>
         </div>
         
@@ -140,8 +140,38 @@ const TreeBrowser=(props)=>{
 
 
 export default class tree_browser extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state=props;
+  }
   render() {
-  	var {root,...others}=this.props;
+  	var {root,...others}=this.state;
   	return <TreeNodeReader gid={root}  view={TreeBrowser}  {...others}/>
   }
+  componentDidMount() {
+    const me=this;
+    const {node}=this.props;
+    function mysubscriber(target,data){
+     console.log('got',target,data);
+     if(data.msg=='focus'){
+       const focus=data.gid;
+       const pgid=data.pgid;
+       var {expands}=me.state;
+       expands=buildExpandsWithFocus(expands,focus,pgid);
+       console.log('old state',me.state);
+       console.log('new state',{focus,expands});
+
+       me.setState({focus,expands});
+     }
+    }
+    this.token=PubSub.subscribe("TreeBrowser",mysubscriber)
+  }
+}
+
+function buildExpandsWithFocus(expands,focus,pgid) {
+  var idx=expands.indexOf(pgid);
+  if(idx<0){return expands;}//没找到直接返回
+  expands=expands.slice(0,idx+1);//父节点之前
+  expands.push(focus);//加入新的节点
+  return expands;
 }

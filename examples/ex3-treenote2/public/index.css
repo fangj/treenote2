@@ -18,16 +18,12 @@
   overflow: hidden;
   border: 1px dashed gray;
 }
-.children.focus {
+.node.focus {
   width: 800px;
 }
-.children.focus > .node {
-  width: 100%;
-  height: auto;
-}
-.children.focus > .node .main {
-  min-height: 50px;
-}
-.children.focus > .node .main.focus {
+.node.focus > .main {
   border: 1px solid green;
+}
+.children.focus > .node {
+  width: 800px;
 }
