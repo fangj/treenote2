@@ -36,6 +36,31 @@ webpackJsonp([0],[
 	  $('html,body').animate({ scrollLeft: cardX - 200 }, 800); //只改变横坐标
 	}
 
+	function dragOver(ev) {
+	  ev.preventDefault();
+	}
+
+	function drag(ev) {
+	  ev.dataTransfer.setData("node", ev.target.id);
+	  ev.dataTransfer.dropEffect = "move";
+	}
+
+	function drop(ev) {
+	  ev.preventDefault();
+	  var sourceID = ev.dataTransfer.getData("node");
+	  var target = ev.target;
+	  if (!target.id) {
+	    target = ev.target.parentElement; //target有时候时目标元素的子元素
+	  }
+	  console.log('s', sourceID, 't', target.id, ev.target);
+	  // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
+
+	  var targetNode = target.parentElement.parentElement;
+	  var sourceNode = document.getElementById(sourceID).parentElement.parentElement;
+	  // targetNode.parentElement.appendChild(sourceNode);
+	  targetNode.parentElement.insertBefore(sourceNode, targetNode);
+	}
+
 	function render(node, vtype) {
 	  //新建节点
 	  if (node._type == 'vnode') {
@@ -58,18 +83,25 @@ webpackJsonp([0],[
 	  }
 	  return _react2.default.createElement(
 	    'div',
-	    { id: node._id, onClick: function onClick(e) {
-	        console.log("node", node);
-	        PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
-	        // scroll2card(node._id);
-	        setTimeout(function (_) {
-	          return scroll2card(node._id);
-	        }, 1000);
-	      }, draggable: 'true' },
+	    null,
 	    _react2.default.createElement(
-	      'pre',
-	      null,
-	      JSON.stringify({ id: node._id, link: node._link }, null, 2)
+	      'div',
+	      { id: node._id,
+	        onClick: function onClick(e) {
+	          console.log("node", node);
+	          PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
+	          // scroll2card(node._id);
+	          setTimeout(function (_) {
+	            return scroll2card(node._id);
+	          }, 1000);
+	        },
+	        draggable: 'true', onDragStart: drag,
+	        onDrop: drop, onDragOver: dragOver },
+	      _react2.default.createElement(
+	        'pre',
+	        null,
+	        JSON.stringify({ id: node._id, link: node._link }, null, 2)
+	      )
 	    )
 	  );
 	}

@@ -17,6 +17,34 @@ function scroll2card(id){
 
 }
 
+function dragOver(ev)
+{
+  ev.preventDefault();
+}
+
+function drag(ev)
+{
+  ev.dataTransfer.setData("node",ev.target.id);
+  ev.dataTransfer.dropEffect = "move";
+}
+
+function drop(ev)
+{
+  ev.preventDefault();
+  var sourceID=ev.dataTransfer.getData("node");
+  var target=ev.target;
+  if(!target.id){
+    target=ev.target.parentElement; //target有时候时目标元素的子元素
+  }
+  console.log('s',sourceID,'t',target.id,ev.target);
+  // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
+
+  var targetNode=target.parentElement.parentElement;
+  var sourceNode=document.getElementById(sourceID).parentElement.parentElement;
+  // targetNode.parentElement.appendChild(sourceNode);
+  targetNode.parentElement.insertBefore(sourceNode,targetNode);
+}
+
 function render(node,vtype){
   //新建节点
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
@@ -27,13 +55,22 @@ function render(node,vtype){
       });
     }}><div className="main">+{node._p}</div></div>
   }
-  return <div id={node._id} onClick={(e)=>{
-    console.log("node",node)
-      PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
-      // scroll2card(node._id);
-      setTimeout(_=>scroll2card(node._id),1000)
-  }} draggable="true"><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
+  return <div>
+    <div id={node._id}
+    onClick={(e)=>{
+      console.log("node",node)
+        PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
+        // scroll2card(node._id);
+        setTimeout(_=>scroll2card(node._id),1000)
+    }} 
+    draggable="true" onDragStart={drag}  
+    onDrop={drop} onDragOver={dragOver} >
+    <pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre>
+    </div>
+  </div>
 }
+
+
         
 // ReactDOM.render(
 //    <div>
