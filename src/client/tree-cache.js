@@ -92,18 +92,17 @@ function remove(gid) {
     //删除节点
     _api.remove(gid).then(res => {
       if (node) { //如果删除前没有取到当前节点，父节点将无法刷新。
-        //递归删除所有子节点
-        return _remove_all_children(node._link.children).then(_=>{
-          cache.del(node._link.p);//刷新父节点
-          return node;//返回被删除的节点
-        })
+        //递归删除cache中所有子节点
+        _remove_all_children(node._link.children);
+        cache.del(node._link.p);//刷新父节点
+        return node;//返回被删除的节点
       }
       return null;
     })
   );
 }
 
-//递归删除所有子节点
+//递归删除cache中所有子节点
 function _remove_all_children(gids) {
   if (!gids) {return;}
   gids.map(gid => {

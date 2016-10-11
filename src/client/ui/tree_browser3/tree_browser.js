@@ -20,6 +20,7 @@ function paste(from,to,tree,treetool){
     }else{
       console.log('lets paste',from,"to",to)
       tree.mv_as_brother(from,to).then(_=>{
+        clipboard=null;
         PubSub.publish("TreeBrowser",{msg:"refresh"});
       })
     }
@@ -35,6 +36,15 @@ const menu=(node,tree,treetool)=>{
                 console.log(clipboard)
                 paste(clipboard,node._id,tree,treetool);
               }}><i className="fa fa-paste"></i></button>
+              <button className="btn btn-danger btn-xs"  onClick={()=>{
+                var sure=confirm("are you sure?")
+                console.log(sure);
+                if(sure){
+                  tree.remove(node._id).then(_=>{
+                    PubSub.publish("TreeBrowser",{msg:"refresh"});
+                  })
+                }
+              }}><i className="fa fa-trash"></i></button>
             </div>
 }
 

@@ -158,6 +158,7 @@ webpackJsonp([0],[
 	    } else {
 	      console.log('lets paste', from, "to", to);
 	      tree.mv_as_brother(from, to).then(function (_) {
+	        clipboard = null;
 	        PubSub.publish("TreeBrowser", { msg: "refresh" });
 	      });
 	    }
@@ -182,6 +183,19 @@ webpackJsonp([0],[
 	          paste(clipboard, node._id, tree, treetool);
 	        } },
 	      _react2.default.createElement('i', { className: 'fa fa-paste' })
+	    ),
+	    _react2.default.createElement(
+	      'button',
+	      { className: 'btn btn-danger btn-xs', onClick: function onClick() {
+	          var sure = confirm("are you sure?");
+	          console.log(sure);
+	          if (sure) {
+	            tree.remove(node._id).then(function (_) {
+	              PubSub.publish("TreeBrowser", { msg: "refresh" });
+	            });
+	          }
+	        } },
+	      _react2.default.createElement('i', { className: 'fa fa-trash' })
 	    )
 	  );
 	};
@@ -968,11 +982,10 @@ webpackJsonp([0],[
 	      _api.remove(gid).then(function (res) {
 	        if (node) {
 	          //如果删除前没有取到当前节点，父节点将无法刷新。
-	          //递归删除所有子节点
-	          return _remove_all_children(node._link.children).then(function (_) {
-	            cache.del(node._link.p); //刷新父节点
-	            return node; //返回被删除的节点
-	          });
+	          //递归删除cache中所有子节点
+	          _remove_all_children(node._link.children);
+	          cache.del(node._link.p); //刷新父节点
+	          return node; //返回被删除的节点
 	        }
 	        return null;
 	      })
@@ -980,7 +993,7 @@ webpackJsonp([0],[
 	  });
 	}
 
-	//递归删除所有子节点
+	//递归删除cache中所有子节点
 	function _remove_all_children(gids) {
 	  if (!gids) {
 	    return;

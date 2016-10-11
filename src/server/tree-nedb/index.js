@@ -139,12 +139,15 @@ function _traversal_all_children(gids,visit) {
 function remove(gid) {
   return async(function(){
      if(gid=='0')return;//根节点不能删除。
+     var node=await(read_node(gid)); //先读取要删除的节点
+     if(!node)return;//已经不存在，返回
      //收集所有子节点
      var gidsforRemove=[];
      const rm=(node)=>{gidsforRemove.push(node._id)};
      await(_traversal_all_children([gid],rm));
      //批量删除
      await(db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {}));//标记为删除
+     await(db.updateAsync({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
      return gidsforRemove;
   })();
 }
