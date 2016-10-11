@@ -58,7 +58,7 @@ webpackJsonp([0],[
 	  }
 	  return _react2.default.createElement(
 	    'div',
-	    { id: node._id, className: vtype, onClick: function onClick(e) {
+	    { id: node._id, onClick: function onClick(e) {
 	        console.log("node", node);
 	        PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
 	        scroll2card(node._id);
@@ -324,10 +324,9 @@ webpackJsonp([0],[
 	          var expands = me.state.expands;
 
 	          expands = buildExpandsWithFocus(expands, focus, pgid);
-	          console.log('old state', me.state);
-	          console.log('new state', { focus: focus, expands: expands });
-
 	          me.setState({ focus: focus, expands: expands });
+	        } else if (data.msg == 'refresh') {
+	          me.forceUpdate();
 	        }
 	      }
 	      this.token = PubSub.subscribe("TreeBrowser", mysubscriber);
