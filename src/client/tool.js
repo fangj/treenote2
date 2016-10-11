@@ -50,12 +50,12 @@ function expand2(node,expands=[]){ //expands用于控制展开的节点列表
 
 //填充父节点直到根节点,包含根节点 
 //[19]==>[0,1,17,19]
-function  expandToRoot(gids,root=0){
+function  expandToRoot(gids,root='0'){
     const gid=gids[0];
     return tree.read(gid).then(node=>{
         const p=node._link.p;
         gids.unshift(p);
-        if(p===root){
+        if(p===root||p==='0'||p===0){
             return gids;
         }else{
             return this.expandToRoot(gids,root);

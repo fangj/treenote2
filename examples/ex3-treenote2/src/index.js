@@ -31,7 +31,7 @@ function render(node,vtype){
     console.log("node",node)
       PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
       scroll2card(node._id);
-  }}><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
+  }} draggable="true"><pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre></div>
 }
         
 // ReactDOM.render(

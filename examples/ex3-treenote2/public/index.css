@@ -31,3 +31,17 @@
 * {
   transition-duration: 2s;
 }
+.menu {
+  position: absolute;
+  left: 100%;
+  margin-left: -160px;
+  bottom: 0;
+  width: 160px;
+  height: 30px;
+  display: none;
+  box-sizing: border-box;
+  text-align: right;
+}
+.main:hover .menu {
+  display: block;
+}

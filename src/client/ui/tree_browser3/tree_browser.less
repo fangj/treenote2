@@ -40,4 +40,22 @@
 
 *{
     transition-duration:2s;
-  }
+}
+
+@menu-w:160px;
+@menu-h:30px;
+.menu{
+      position: absolute;
+      left: 100%;
+      margin-left: -@menu-w;
+      bottom:0;
+      width: @menu-w;
+      height:@menu-h;
+      // border: 1px solid black;
+      display: none;
+      box-sizing: border-box;
+      text-align: right;
+    }
+.main:hover .menu{
+  display: block;
+}

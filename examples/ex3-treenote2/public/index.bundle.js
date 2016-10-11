@@ -62,7 +62,7 @@ webpackJsonp([0],[
 	        console.log("node", node);
 	        PubSub.publish("TreeBrowser", { msg: 'focus', gid: node._id, pgid: node._link.p });
 	        scroll2card(node._id);
-	      } },
+	      }, draggable: 'true' },
 	    _react2.default.createElement(
 	      'pre',
 	      null,
@@ -139,126 +139,50 @@ webpackJsonp([0],[
 	__webpack_require__(15);
 	var PubSub = __webpack_require__(8);
 
-	// class NodeWrapper extends  React.Component {
-	//   constructor(props) {
-	//     super(props);
-	//     const {expands,focus}=this.props;
-	//     this.state={expands:expands||[],focus}
-	//   }
+	var clipboard; //剪贴板，用于存放当前剪切的node id
 
-	//   render() {
-	// 	  const {gid,node,render,tree}=this.props;
-	// 	  const {expands,focus}=this.state;
-	// 		var expand=false;//是否要展开当前节点？默认不展开
-	// 		if(expands.length>0){
-	// 			var [first,...remain]=expands;
-	// 			if(first===node._id){
-	// 				expand=true;//当前结点在要展开的节点中，展开
-	// 			}
-	// 		}
-	// 		this.state.expand=expand;
-	// 	  if(expand){
-	// 	  	return <TreeNodeReader  tree={tree} gid={node._id} view={NodeWithChildren}  render={render} focus={focus} level={1} expands={remain}/>
-	// 	  }else{
-	// 	  	return <Noder  tree={tree} node={node}  render={render}  focus={focus} />
-	// 	  }
-	//   }	
+	function isDescendant(target, source, treetool) {
+	  //check whether target is  descendant of source
+	  return treetool.expandToRoot([target], source).then(function (idpath) {
+	    return idpath.indexOf(source) > -1;
+	  });
+	}
 
-	//   componentDidMount() {
-	//   	const me=this;
-	//   	const {node}=this.props;
-	//   	function mysubscriber(gid,data){
-	//   		console.log('got',gid,data);
-	//   		if(data.msg=='focus'){
-	//   			const focus=data.gid;
+	function paste(from, to, tree, treetool) {
+	  isDescendant(to, from, treetool).then(function (cannot) {
+	    if (cannot) {
+	      alert("cannot paste from " + from + " to " + to);
+	    } else {
+	      console.log('lets paste', from, "to", to);
+	      tree.mv_as_brother(from, to).then(function (_) {
+	        PubSub.publish("TreeBrowser", { msg: "refresh" });
+	      });
+	    }
+	  });
+	}
 
-	//   			console.log('old state',me.state);
-	//   			console.log('new state',{
-	//   				expands:[node._id,focus],
-	//   				focus
-	//   			});
+	var menu = function menu(node, tree, treetool) {
+	  return _react2.default.createElement(
+	    'div',
+	    { className: 'menu' },
+	    _react2.default.createElement(
+	      'button',
+	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
+	          clipboard = node._id;
+	        } },
+	      _react2.default.createElement('i', { className: 'fa fa-cut' })
+	    ),
+	    _react2.default.createElement(
+	      'button',
+	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
+	          console.log(clipboard);
+	          paste(clipboard, node._id, tree, treetool);
+	        } },
+	      _react2.default.createElement('i', { className: 'fa fa-paste' })
+	    )
+	  );
+	};
 
-	//   			me.setState({
-	//   				expands:[node._id,focus],
-	//   				focus
-	//   			})
-	//   		}
-	//   	}
-	//   	this.token=PubSub.subscribe(node._id,mysubscriber)
-	//   }
-	//   componentWillUnmount() {
-	//   	PubSub.unsubscribe(this.token);
-	//   }
-
-	// }
-
-	// const NodeWithChildren=(props)=>{
-	// 	console.log('NodeWithChildren render')
-	//     const {render,node,focus,...others}=props;
-	//     const vnode={_type:"vnode",_p:node._id};
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
-	//         </div>
-
-	//     );
-	// }
-
-	// class NodeWithChildren extends React.Component {
-	//   static propTypes = {
-	//     node: React.PropTypes.object,
-	//   };
-
-	//   constructor(props) {
-	//     super(props);
-	//   }
-
-	//   render() {
-	//   	console.log('NodeWithChildren render')
-	//     const me=this;
-	//     const {render,node,focus,...others}=me.props;
-	//     const vnode={_type:"vnode",_p:node._id};
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//           <div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(cnode=><NodeWrapper key={cnode._id} node={cnode} render={render}  focus={focus}  {...others} />)}</div>
-	//         </div>
-
-	//     );
-	//   }
-	// }
-
-	// class Noder extends React.Component {
-	//   static propTypes = {
-	//     node: React.PropTypes.object,
-	//   };
-
-	//   constructor(props) {
-	//     super(props);
-	//   }
-
-	//   render() {
-	//     const me=this;
-	//     const {render,node,expands,focus}=me.props;
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//         </div>
-
-	//     );
-	//   }
-	// }
-
-	// const Noder=(props)=>{
-	//     const {render,node,expands,focus}=props;
-	//     return (
-	//         <div className="node" >
-	//           <div className={cx("main",{focus:focus===node._id})}>{render(node)}</div>
-	//         </div>
-
-	//     );
-	// }
 	var TreeBrowser = function TreeBrowser(props) {
 	  var node = props.node;
 
@@ -267,7 +191,9 @@ webpackJsonp([0],[
 	  var render = props.render;
 	  var focus = props.focus;
 	  var expands = props.expands;
+	  var tree = props.tree;
 
+	  var treetool = __webpack_require__(9)(tree);
 	  var vnode = { _type: "vnode", _p: node._id };
 	  return _react2.default.createElement(
 	    'div',
@@ -275,7 +201,8 @@ webpackJsonp([0],[
 	    _react2.default.createElement(
 	      'div',
 	      { className: 'main' },
-	      render(node)
+	      render(node),
+	      menu(node, tree, treetool)
 	    ),
 	    !_.includes(expands, node._id) ? null : _react2.default.createElement(
 	      'div',
@@ -653,13 +580,13 @@ webpackJsonp([0],[
 	function expandToRoot(gids) {
 	    var _this = this;
 
-	    var root = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+	    var root = arguments.length <= 1 || arguments[1] === undefined ? '0' : arguments[1];
 
 	    var gid = gids[0];
 	    return tree.read(gid).then(function (node) {
 	        var p = node._link.p;
 	        gids.unshift(p);
-	        if (p === root) {
+	        if (p === root || p === '0' || p === 0) {
 	            return gids;
 	        } else {
 	            return _this.expandToRoot(gids, root);

@@ -5,13 +5,50 @@ var _=require("lodash");
 require('./tree_browser.less');
 var PubSub =require ("pubsub-js");
 
+var clipboard;//剪贴板，用于存放当前剪切的node id
+
+function isDescendant(target,source,treetool){ //check whether target is  descendant of source
+  return treetool.expandToRoot([target],source).then(idpath=>{
+    return idpath.indexOf(source)>-1;
+  })
+}
+
+function paste(from,to,tree,treetool){
+  isDescendant(to,from,treetool).then(cannot=>{
+    if(cannot){
+      alert("cannot paste from " +from+" to "+to)
+    }else{
+      console.log('lets paste',from,"to",to)
+      tree.mv_as_brother(from,to).then(_=>{
+        PubSub.publish("TreeBrowser",{msg:"refresh"});
+      })
+    }
+  })
+}
+
+const menu=(node,tree,treetool)=>{
+    return <div className="menu">
+              <button className="btn btn-default btn-xs" onClick={()=>{
+                clipboard=node._id;
+              }}><i className="fa fa-cut"></i></button>
+              <button className="btn btn-default btn-xs"  onClick={()=>{
+                console.log(clipboard)
+                paste(clipboard,node._id,tree,treetool);
+              }}><i className="fa fa-paste"></i></button>
+            </div>
+}
+
 const TreeBrowser=(props)=>{
     const {node,...others}=props;
-    const {render,focus,expands}=props;
+    const {render,focus,expands,tree}=props;
+    const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
     return (
         <div className={cx("node",{focus:focus===node._id})} >
-          <div className="main">{render(node)}</div>
+          <div className="main">
+            {render(node)}
+            {menu(node,tree,treetool)}
+          </div>
           {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}</div>}
         </div>
         
