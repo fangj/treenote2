@@ -334,6 +334,7 @@ webpackJsonp([0],{
 	      var focus = this.state.focus;
 
 	      d.scroll2card(focus);
+	      d.ensureFocusColumn(focus);
 	    }
 	  }]);
 
@@ -15242,10 +15243,15 @@ webpackJsonp([0],{
 	  targetNode.parentNode.insertBefore(placeholder, targetNode.nextElementSibling);
 	}
 
+	function ensureFocusColumn(focus) {
+	  $(focus).closest(".children").addClass("focus");
+	}
+
 	module.exports = {
 	  scroll2card: scroll2card,
 	  drag: drag, drop: drop, dragEnd: dragEnd,
-	  dragover: dragover
+	  dragover: dragover,
+	  ensureFocusColumn: ensureFocusColumn
 	};
 
 /***/ },

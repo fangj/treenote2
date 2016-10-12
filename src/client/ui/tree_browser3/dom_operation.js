@@ -67,9 +67,14 @@ function dragover(ev){
   targetNode.parentNode.insertBefore(placeholder, targetNode.nextElementSibling);
 }
 
+function ensureFocusColumn(focus){
+  $(focus).closest(".children").addClass("focus");
+}
+
 
 module.exports={
   scroll2card,
   drag,drop,dragEnd,
-  dragover
+  dragover,
+  ensureFocusColumn
 }

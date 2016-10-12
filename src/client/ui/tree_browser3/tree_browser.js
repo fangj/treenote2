@@ -118,6 +118,7 @@ export default class tree_browser extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     const {focus}=this.state;
     d.scroll2card(focus);
+    d.ensureFocusColumn(focus);
   }
 }
 
