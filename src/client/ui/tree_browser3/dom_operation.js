@@ -1,5 +1,7 @@
 var cardImage=require('./handcard');
-
+if(!window.$){
+  console.warn("need jQuery");
+}
 function scroll2card(id){
   if(!window.$)return;
   var card=$("#"+id);
@@ -14,29 +16,39 @@ function scroll2card(id){
   $('html,body').animate(newPos, 800); //只改变横坐标
 }
 
-function dragWithCustomImage(event) {
-  var canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 50;
-
-  var ctx = canvas.getContext("2d");
-  ctx.lineWidth = 4;
-  ctx.moveTo(0, 10);
-  ctx.lineTo(50, 50);
-  ctx.moveTo(0, 50);
-  ctx.lineTo(50, 0);
-  ctx.stroke();
-
-  var dt = event.dataTransfer;
-  dt.setData('text/plain', 'Data to Drag');
-  dt.setDragImage(cardImage, 100, 50);
-}
 function drag(ev){
-  dragWithCustomImage(ev)
-  console.log('drag',ev)
+  var moveButton=ev.target;
+  var menu=moveButton.parentElement;
+  var main=menu.parentElement;
+  var node=main.parentElement;
+  console.log("node",node)
+  var dt = ev.dataTransfer;
+  dt.setData('text/plain',node.id);
+  dt.setDragImage(cardImage, 100, 50);
+  dt.effectAllowed = "move";
+}
+
+function drop(ev){
+  ev.preventDefault();
+  var sourceID = ev.dataTransfer.getData("text/plain");
+  var targetNode=$( ev.target ).closest(".node").get(0);
+  console.log("targetNode",targetNode);
+  if(sourceID==targetNode.id){
+    return;//相同元素不移动
+  }
+  var sourceNode=document.getElementById(sourceID);
+  $(sourceNode).removeClass('focus');//避免宽元素放到窄列中
+  targetNode.parentElement.insertBefore(sourceNode,targetNode.nextElementSibling);
+}
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+function dragover(ev){
+  allowDrop(ev);
 }
 
 module.exports={
   scroll2card,
-  drag,
-  dragWithCustomImage
+  drag,drop,
+  dragover
 }

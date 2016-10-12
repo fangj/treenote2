@@ -61,13 +61,13 @@ const TreeBrowser=(props)=>{
     const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
     return (
-        <div className={cx("node",{focus:focus===node._id})} >
-          <div className="main">
+        <div className={cx("node",{focus:focus===node._id})} id={node._id}>
+          <div className="main" onDrop={d.drop} onDragOver={d.dragover}>
             {render(node)}
             {menu(node,tree,treetool)}
           </div>
           {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>
-          <div className="node">
+          <div className="vnode" >
             <div  className="main">
             {render(vnode)}
             </div>

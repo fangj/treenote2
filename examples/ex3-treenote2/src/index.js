@@ -55,7 +55,7 @@ function render(node,vtype){
     }}>+{node._p}</div>
   }
   return <div>
-    <div id={node._id}
+    <div 
     onClick={(e)=>{
       console.log("node",node)
         PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
