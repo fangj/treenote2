@@ -183,7 +183,7 @@ webpackJsonp([0],{
 	    if (cannot) {
 	      alert("cannot paste from " + from + " to " + to);
 	    } else {
-	      console.log('lets paste', from, "to", to);
+	      // console.log('lets paste',from,"to",to)
 	      tree.mv_as_brother(from, to).then(function (_) {
 	        clipboard = null;
 	        PubSub.publish("TreeBrowser", { msg: "refresh" });
@@ -213,7 +213,7 @@ webpackJsonp([0],{
 	    _react2.default.createElement(
 	      'button',
 	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
-	          console.log(clipboard);
+	          // console.log(clipboard)
 	          paste(clipboard, node._id, tree, treetool);
 	        } },
 	      _react2.default.createElement('i', { className: 'fa fa-paste' })
@@ -222,7 +222,7 @@ webpackJsonp([0],{
 	      'button',
 	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
 	          var sure = confirm("are you sure?");
-	          console.log(sure);
+	          // console.log(sure);
 	          if (sure) {
 	            tree.remove(node._id).then(function (_) {
 	              PubSub.publish("TreeBrowser", { msg: "refresh" });
@@ -246,6 +246,11 @@ webpackJsonp([0],{
 
 	  var treetool = __webpack_require__(9)(tree);
 	  var vnode = { _type: "vnode", _p: node._id };
+	  //test begin
+	  // if(node._id=='0'){
+	  //   console.log('TreeBrowser',node);
+	  // }
+	  //test end
 	  return _react2.default.createElement(
 	    'div',
 	    { className: cx("node", { focus: focus === node._id }), id: node._id },
@@ -283,6 +288,7 @@ webpackJsonp([0],{
 	    var _this = _possibleConstructorReturn(this, (tree_browser.__proto__ || Object.getPrototypeOf(tree_browser)).call(this, props));
 
 	    _this.state = props;
+	    var tree = props.tree;
 	    return _this;
 	  }
 
@@ -300,8 +306,11 @@ webpackJsonp([0],{
 	    key: 'componentDidMount',
 	    value: function componentDidMount() {
 	      var me = this;
-	      var node = this.props.node;
+	      var _props = this.props;
+	      var node = _props.node;
+	      var tree = _props.tree;
 
+	      var treetool = __webpack_require__(9)(tree);
 	      function mysubscriber(target, data) {
 	        console.log('got', target, data);
 	        if (data.msg == 'focus') {
@@ -313,6 +322,8 @@ webpackJsonp([0],{
 	          me.setState({ focus: focus, expands: expands });
 	        } else if (data.msg == 'refresh') {
 	          me.forceUpdate();
+	        } else if (data.msg == 'move') {
+	          paste(data.gid, data.bgid, tree, treetool);
 	        }
 	      }
 	      this.token = PubSub.subscribe("TreeBrowser", mysubscriber);
@@ -13281,7 +13292,7 @@ webpackJsonp([0],{
 	var LRU = __webpack_require__(20),
 	    cache = LRU(5000);
 	var _ = __webpack_require__(13);
-
+	// var cache=require('./cache');//LRU cache没有问题，是删除sgid父节点后又误读取了父节点（dgid）
 	var _api;
 	var api = {
 	  read: read,
@@ -13336,6 +13347,7 @@ webpackJsonp([0],{
 	      unCachedGids.push(gid);
 	    }
 	  });
+	  console.log('read_nodes', gids, 'unCachedGids', unCachedGids);
 	  if (unCachedGids.length === 0) {
 	    return Promise.resolve(cachedNodes.map(clone)); //全在cache中直接返回 //返回克隆避免缓存被修改
 	  }
@@ -13367,8 +13379,13 @@ webpackJsonp([0],{
 	  });
 	}
 
+	function __check_has_gid(gid) {
+	  console.log("__check_has_gid", gid, cache.has(gid));
+	}
+
 	function _remove_parent_from_cache(gid) {
 	  return api.read(gid).then(function (node) {
+	    console.log("_remove_parent_from_cache", node._link.p);
 	    cache.del(node._link.p);
 	  });
 	}
@@ -13432,8 +13449,9 @@ webpackJsonp([0],{
 	}
 
 	function mv_as_brother(sgid, dgid) {
-	  return _remove_parent_from_cache(sgid).then(function (_) {
-	    return _remove_parent_from_cache(dgid);
+	  return _remove_parent_from_cache(dgid) //顺序重要！要先删除目标节点dgid的父节点，因为目标节点dgid可能是sgid的父节点
+	  .then(function (_) {
+	    return _remove_parent_from_cache(sgid);
 	  }).then(function (_) {
 	    return _api.mv_as_brother(sgid, dgid).then(function (node) {
 	      cache.set(node._id, node);
@@ -15184,7 +15202,7 @@ webpackJsonp([0],{
 	  dragSource = node;
 	  $(node).css('opacity', '0.5'); //淡化要移动的节点
 	  $(node).children(".children").hide(); //不能够移动到子节点，所以隐藏子节点避免成为drop target
-	  console.log("node", node);
+	  // console.log("node",node)
 	  var dt = ev.dataTransfer;
 	  dt.setData('text/plain', node.id);
 	  dt.setDragImage(cardImage, 100, 50);
@@ -15200,18 +15218,18 @@ webpackJsonp([0],{
 	}
 
 	function drop(ev) {
-	  console.log('drop');
+	  // console.log('drop')
 	  ev.preventDefault();
 	  var sourceID = ev.dataTransfer.getData("text/plain");
 	  var targetNode = $(ev.target).closest(".node").get(0);
-	  console.log("targetNode", targetNode);
+	  // console.log("targetNode",targetNode);
 	  var sourceNode = document.getElementById(sourceID);
 
 	  if (sourceID == targetNode.id) {
 	    return; //相同元素不移动
 	  }
-	  // $(sourceNode).removeClass('focus');//避免宽元素放到窄列中
-	  targetNode.parentElement.insertBefore(sourceNode, targetNode.nextElementSibling);
+	  // targetNode.parentElement.insertBefore(sourceNode,targetNode.nextElementSibling); //不再需要，因为react会重塑节点
+	  PubSub.publish("TreeBrowser", { msg: "move", gid: sourceID, bgid: targetNode.id });
 	}
 	function allowDrop(ev) {
 	  ev.preventDefault();

@@ -20,7 +20,7 @@ function paste(from,to,tree,treetool){
     if(cannot){
       alert("cannot paste from " +from+" to "+to)
     }else{
-      console.log('lets paste',from,"to",to)
+      // console.log('lets paste',from,"to",to)
       tree.mv_as_brother(from,to).then(_=>{
         clipboard=null;
         PubSub.publish("TreeBrowser",{msg:"refresh"});
@@ -40,12 +40,12 @@ const menu=(node,tree,treetool)=>{
                 clipboard=node._id;
               }}><i className="fa fa-cut"></i></button>
               <button className="btn btn-default btn-xs"  onClick={()=>{
-                console.log(clipboard)
+                // console.log(clipboard)
                 paste(clipboard,node._id,tree,treetool);
               }}><i className="fa fa-paste"></i></button>
               <button className="btn btn-default btn-xs"  onClick={()=>{
                 var sure=confirm("are you sure?")
-                console.log(sure);
+                // console.log(sure);
                 if(sure){
                   tree.remove(node._id).then(_=>{
                     PubSub.publish("TreeBrowser",{msg:"refresh"});
@@ -60,6 +60,11 @@ const TreeBrowser=(props)=>{
     const {render,focus,expands,tree}=props;
     const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
+    //test begin
+    // if(node._id=='0'){
+    //   console.log('TreeBrowser',node);
+    // }
+    //test end
     return (
         <div className={cx("node",{focus:focus===node._id})} id={node._id}>
           <div className="main" onDrop={d.drop} onDragOver={d.dragover}>
@@ -84,6 +89,7 @@ export default class tree_browser extends React.Component {
   constructor(props) {
     super(props);
     this.state=props;
+    const {tree}=props;
   }
   render() {
   	var {root,...others}=this.state;
@@ -91,7 +97,8 @@ export default class tree_browser extends React.Component {
   }
   componentDidMount() {
     const me=this;
-    const {node}=this.props;
+    const {node,tree}=this.props;
+    const treetool=require('treenote2/src/client/tool')(tree);
     function mysubscriber(target,data){
      console.log('got',target,data);
      if(data.msg=='focus'){
@@ -102,6 +109,8 @@ export default class tree_browser extends React.Component {
        me.setState({focus,expands});
      }else if(data.msg=='refresh'){
       me.forceUpdate();
+     }else if(data.msg=='move'){
+      paste(data.gid,data.bgid,tree,treetool);
      }
     }
     this.token=PubSub.subscribe("TreeBrowser",mysubscriber)

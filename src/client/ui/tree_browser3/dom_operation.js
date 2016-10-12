@@ -27,7 +27,7 @@ function drag(ev){
   dragSource=node;
   $(node).css('opacity','0.5');//淡化要移动的节点
   $(node).children(".children").hide(); //不能够移动到子节点，所以隐藏子节点避免成为drop target
-  console.log("node",node)
+  // console.log("node",node)
   var dt = ev.dataTransfer;
   dt.setData('text/plain',node.id);
   dt.setDragImage(cardImage, 100, 50);
@@ -43,18 +43,18 @@ function dragEnd(ev){
 }
 
 function drop(ev){
-  console.log('drop')
+  // console.log('drop')
   ev.preventDefault();
   var sourceID = ev.dataTransfer.getData("text/plain");
   var targetNode=$( ev.target ).closest(".node").get(0);
-  console.log("targetNode",targetNode);
+  // console.log("targetNode",targetNode);
   var sourceNode=document.getElementById(sourceID);
   
   if(sourceID==targetNode.id){
     return;//相同元素不移动
   }
-  // $(sourceNode).removeClass('focus');//避免宽元素放到窄列中
-  targetNode.parentElement.insertBefore(sourceNode,targetNode.nextElementSibling);
+  // targetNode.parentElement.insertBefore(sourceNode,targetNode.nextElementSibling); //不再需要，因为react会重塑节点
+  PubSub.publish("TreeBrowser",{msg:"move",gid:sourceID,bgid:targetNode.id});
 }
 function allowDrop(ev) {
     ev.preventDefault();

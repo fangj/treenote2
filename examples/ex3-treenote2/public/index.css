@@ -19,27 +19,25 @@
   border: 1px dashed gray;
 }
 .node.focus {
-  width: 800px;
+  width: 600px;
 }
 .node.focus > .main {
   border: 2px solid black;
 }
 .children.focus > .node {
-  width: 800px;
+  width: 600px;
 }
 .node {
   transition-duration: 0.8s;
 }
 .menu {
   position: absolute;
-  left: 100%;
-  margin-left: -160px;
+  left: 0;
   bottom: 0;
   width: 160px;
   height: 24px;
   display: none;
   box-sizing: border-box;
-  text-align: right;
 }
 .main:hover .menu {
   display: block;
