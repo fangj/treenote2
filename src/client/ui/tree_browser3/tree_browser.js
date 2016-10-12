@@ -32,7 +32,7 @@ function paste(from,to,tree,treetool){
 const menu=(node,tree,treetool)=>{
     return <div className="menu">
               <button className="btn btn-default btn-xs"
-              draggable="true" onDragStart={d.drag}
+              draggable="true" onDragStart={d.drag} onDragEnd={d.dragEnd}
               >
                 <i className="fa fa-arrows"></i>
               </button>

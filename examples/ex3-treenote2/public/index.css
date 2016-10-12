@@ -44,13 +44,6 @@
 .main:hover .menu {
   display: block;
 }
-li.placeholder {
-  background: #fff078;
-}
-li.placeholder:before {
-  content: "Drop here";
-  color: #e1d25a;
-}
 @keyframes myfirst {
   from {
     opacity: 0;
@@ -61,4 +54,11 @@ li.placeholder:before {
 }
 .main {
   animation: myfirst 1s;
+}
+div.placeholder {
+  background: #fff078;
+}
+div.placeholder:before {
+  content: "<";
+  color: #e1d25a;
 }
