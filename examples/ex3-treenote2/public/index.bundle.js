@@ -37,30 +37,33 @@ webpackJsonp([0],{
 	//   $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
 	// }
 
-	function dragOver(ev) {
-	  ev.preventDefault();
-	}
+	// function dragOver(ev)
+	// {
+	//   ev.preventDefault();
+	// }
 
-	function drag(ev) {
-	  ev.dataTransfer.setData("node", ev.target.id);
-	  ev.dataTransfer.dropEffect = "move";
-	}
+	// function drag(ev)
+	// {
+	//   ev.dataTransfer.setData("node",ev.target.id);
+	//   ev.dataTransfer.dropEffect = "move";
+	// }
 
-	function drop(ev) {
-	  ev.preventDefault();
-	  var sourceID = ev.dataTransfer.getData("node");
-	  var target = ev.target;
-	  if (!target.id) {
-	    target = ev.target.parentElement; //target有时候时目标元素的子元素
-	  }
-	  console.log('s', sourceID, 't', target.id, ev.target);
-	  // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
-	  if (target.id == '0') return; //不能移动为根节点的兄弟
-	  var targetNode = target.parentElement.parentElement.parentElement;
-	  var sourceNode = document.getElementById(sourceID).parentElement.parentElement.parentElement;
-	  // targetNode.parentElement.appendChild(sourceNode);
-	  targetNode.parentElement.insertBefore(sourceNode, targetNode);
-	}
+	// function drop(ev)
+	// {
+	//   ev.preventDefault();
+	//   var sourceID=ev.dataTransfer.getData("node");
+	//   var target=ev.target;
+	//   if(!target.id){
+	//     target=ev.target.parentElement; //target有时候时目标元素的子元素
+	//   }
+	//   console.log('s',sourceID,'t',target.id,ev.target);
+	//   // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
+	//   if(target.id=='0')return;//不能移动为根节点的兄弟
+	//   var targetNode=target.parentElement.parentElement.parentElement;
+	//   var sourceNode=document.getElementById(sourceID).parentElement.parentElement.parentElement;
+	//   // targetNode.parentElement.appendChild(sourceNode);
+	//   targetNode.parentElement.insertBefore(sourceNode,targetNode);
+	// }
 
 	function render(node, vtype) {
 	  //新建节点
@@ -111,7 +114,8 @@ webpackJsonp([0],{
 	_reactDom2.default.render(_react2.default.createElement(
 	  'div',
 	  null,
-	  _react2.default.createElement(_tree_browser2.default, { tree: tree, render: render, root: '0', focus: 'aEPi425BJDu0Nw3O', expands: ['0', 'aEPi425BJDu0Nw3O', 'fp9rDCkZC4qekBRg', 'e5jEsZ9cf31Vy7T5'] })
+	  _react2.default.createElement(_tree_browser2.default, { tree: tree, render: render, root: '0', focus: 'aEPi425BJDu0Nw3O', expands: ['0', 'aEPi425BJDu0Nw3O', 'fp9rDCkZC4qekBRg', 'e5jEsZ9cf31Vy7T5'],
+	    hideRoot: true })
 	), document.getElementById('root'));
 
 	// ReactDOM.render(
@@ -243,6 +247,8 @@ webpackJsonp([0],{
 	  var focus = props.focus;
 	  var expands = props.expands;
 	  var tree = props.tree;
+	  var level = props.level;
+	  var hideRoot = props.hideRoot;
 
 	  var treetool = __webpack_require__(9)(tree);
 	  var vnode = { _type: "vnode", _p: node._id };
@@ -251,10 +257,12 @@ webpackJsonp([0],{
 	  //   console.log('TreeBrowser',node);
 	  // }
 	  //test end
+	  var isHideRoot = hideRoot && level === 1;
 	  return _react2.default.createElement(
 	    'div',
-	    { className: cx("node", { focus: focus === node._id }), id: node._id },
-	    _react2.default.createElement(
+	    { className: cx("node", { focus: focus === node._id }, { hideRoot: isHideRoot }), id: node._id,
+	      'data-level': level },
+	    isHideRoot ? null : _react2.default.createElement(
 	      'div',
 	      { className: 'main', onDrop: d.drop, onDragOver: d.dragover },
 	      render(node),
@@ -273,7 +281,7 @@ webpackJsonp([0],{
 	        )
 	      ),
 	      node._children.map(function (node) {
-	        return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others));
+	        return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others, { level: level + 1 }));
 	      })
 	    )
 	  );
@@ -300,7 +308,7 @@ webpackJsonp([0],{
 
 	      var others = _objectWithoutProperties(_state, ['root']);
 
-	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others));
+	      return _react2.default.createElement(_tree_node_reader2.default, _extends({ gid: root, view: TreeBrowser }, others, { level: 1 }));
 	    }
 	  }, {
 	    key: 'componentDidMount',
@@ -15181,7 +15189,7 @@ webpackJsonp([0],{
 	function scroll2card(id) {
 	  if (!window.$) return;
 	  var card = $("#" + id);
-	  if (!card || card.offset()) return;
+	  if (!card || !card.offset()) return;
 	  var cardX = card.offset().left;
 	  var cardY = card.offset().top;
 	  var newPos = { scrollLeft: cardX - 200 };

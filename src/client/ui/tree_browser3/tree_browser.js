@@ -57,7 +57,7 @@ const menu=(node,tree,treetool)=>{
 
 const TreeBrowser=(props)=>{
     const {node,...others}=props;
-    const {render,focus,expands,tree}=props;
+    const {render,focus,expands,tree,level,hideRoot}=props;
     const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
     //test begin
@@ -65,19 +65,22 @@ const TreeBrowser=(props)=>{
     //   console.log('TreeBrowser',node);
     // }
     //test end
+    var isHideRoot=hideRoot&&level===1;
     return (
-        <div className={cx("node",{focus:focus===node._id})} id={node._id}>
-          <div className="main" onDrop={d.drop} onDragOver={d.dragover}>
+        <div className={cx("node",{focus:focus===node._id},{hideRoot:isHideRoot})} id={node._id}
+        data-level={level}>
+        {isHideRoot?null:<div className="main" onDrop={d.drop} onDragOver={d.dragover}>
             {render(node)}
             {menu(node,tree,treetool)}
           </div>
+        }
           {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>
           <div className="vnode" >
             <div  className="main">
             {render(vnode)}
             </div>
           </div>
-          {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}
+          {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others} level={level+1}/>)}
           </div>}
         </div>
         
@@ -93,7 +96,7 @@ export default class tree_browser extends React.Component {
   }
   render() {
   	var {root,...others}=this.state;
-  	return <TreeNodeReader gid={root}  view={TreeBrowser}  {...others}/>
+  	return <TreeNodeReader gid={root}  view={TreeBrowser}  {...others} level={1}/>
   }
   componentDidMount() {
     const me=this;

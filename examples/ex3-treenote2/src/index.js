@@ -16,33 +16,33 @@ var tree=require('treenote2/src/client/tree-cache.js')("_api");
 //   $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
 // }
 
-function dragOver(ev)
-{
-  ev.preventDefault();
-}
+// function dragOver(ev)
+// {
+//   ev.preventDefault();
+// }
 
-function drag(ev)
-{
-  ev.dataTransfer.setData("node",ev.target.id);
-  ev.dataTransfer.dropEffect = "move";
-}
+// function drag(ev)
+// {
+//   ev.dataTransfer.setData("node",ev.target.id);
+//   ev.dataTransfer.dropEffect = "move";
+// }
 
-function drop(ev)
-{
-  ev.preventDefault();
-  var sourceID=ev.dataTransfer.getData("node");
-  var target=ev.target;
-  if(!target.id){
-    target=ev.target.parentElement; //target有时候时目标元素的子元素
-  }
-  console.log('s',sourceID,'t',target.id,ev.target);
-  // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
-  if(target.id=='0')return;//不能移动为根节点的兄弟
-  var targetNode=target.parentElement.parentElement.parentElement;
-  var sourceNode=document.getElementById(sourceID).parentElement.parentElement.parentElement;
-  // targetNode.parentElement.appendChild(sourceNode);
-  targetNode.parentElement.insertBefore(sourceNode,targetNode);
-}
+// function drop(ev)
+// {
+//   ev.preventDefault();
+//   var sourceID=ev.dataTransfer.getData("node");
+//   var target=ev.target;
+//   if(!target.id){
+//     target=ev.target.parentElement; //target有时候时目标元素的子元素
+//   }
+//   console.log('s',sourceID,'t',target.id,ev.target);
+//   // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
+//   if(target.id=='0')return;//不能移动为根节点的兄弟
+//   var targetNode=target.parentElement.parentElement.parentElement;
+//   var sourceNode=document.getElementById(sourceID).parentElement.parentElement.parentElement;
+//   // targetNode.parentElement.appendChild(sourceNode);
+//   targetNode.parentElement.insertBefore(sourceNode,targetNode);
+// }
 
 function render(node,vtype){
   //新建节点
@@ -80,7 +80,8 @@ function render(node,vtype){
 
 ReactDOM.render(
    <div >
-   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}/>
+   <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' expands={['0','aEPi425BJDu0Nw3O','fp9rDCkZC4qekBRg','e5jEsZ9cf31Vy7T5']}
+   hideRoot={true}/>
    </div>,
   document.getElementById('root')
 );

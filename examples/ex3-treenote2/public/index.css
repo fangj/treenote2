@@ -50,6 +50,9 @@
     opacity: 1;
   }
 }
+.node.hideRoot {
+  width: 0;
+}
 .main {
   animation: myfirst 1s;
 }
