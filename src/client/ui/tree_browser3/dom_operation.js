@@ -68,7 +68,7 @@ function dragover(ev){
 }
 
 function ensureFocusColumn(focus){
-  $(focus).closest(".children").addClass("focus");
+  $("#"+focus).closest(".children").addClass("focus");
 }
 
 
