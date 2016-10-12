@@ -15181,7 +15181,7 @@ webpackJsonp([0],{
 	function scroll2card(id) {
 	  if (!window.$) return;
 	  var card = $("#" + id);
-	  if (!card) return;
+	  if (!card || card.offset()) return;
 	  var cardX = card.offset().left;
 	  var cardY = card.offset().top;
 	  var newPos = { scrollLeft: cardX - 200 };
