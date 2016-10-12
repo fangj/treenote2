@@ -4,22 +4,10 @@ var cx =require ("classnames");
 var _=require("lodash");
 require('./tree_browser.less');
 var PubSub =require ("pubsub-js");
-
+var d=require('./dom_operation');
 var clipboard;//剪贴板，用于存放当前剪切的node id
 
-function scroll2card(id){
-  if(!window.$)return;
-  var card=$("#"+id);
-  if(!card)return;
-  var cardX=card.offset().left;
-  var cardY=card.offset().top;
-  var newPos={scrollLeft:cardX-200};
-  if(cardY>(window.scrollY+window.innerHeight/2)){
-    //如果卡片位置在屏幕的下半部分以下。则移动到屏幕上部
-    newPos.scrollTop=cardY-20;
-  }
-  $('html,body').animate(newPos, 800); //只改变横坐标
-}
+
 
 function isDescendant(target,source,treetool){ //check whether target is  descendant of source
   return treetool.expandToRoot([target],source).then(idpath=>{
@@ -43,7 +31,11 @@ function paste(from,to,tree,treetool){
 
 const menu=(node,tree,treetool)=>{
     return <div className="menu">
-              <button className="btn btn-default btn-xs"><i className="fa fa-arrows"></i></button>
+              <button className="btn btn-default btn-xs"
+              draggable="true" onDragStart={d.drag}
+              >
+                <i className="fa fa-arrows"></i>
+              </button>
               <button className="btn btn-default btn-xs" onClick={()=>{
                 clipboard=node._id;
               }}><i className="fa fa-cut"></i></button>
@@ -116,7 +108,7 @@ export default class tree_browser extends React.Component {
   }
   componentDidUpdate(prevProps, prevState) {
     const {focus}=this.state;
-    scroll2card(focus);
+    d.scroll2card(focus);
   }
 }
 

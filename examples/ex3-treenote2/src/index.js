@@ -7,14 +7,14 @@ var PubSub =require('pubsub-js');
 
 var tree=require('treenote2/src/client/tree-cache.js')("_api");
 
-function scroll2card(id){ //已经移到tree_browser中
-  var card=$("#"+id);
-  var cardX=card.offset().left;
-  var cardY=card.offset().top;
-  // window.scrollTo(cardX-20,cardY-20);
-  // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
-  $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
-}
+// function scroll2card(id){ //已经移到tree_browser中
+//   var card=$("#"+id);
+//   var cardX=card.offset().left;
+//   var cardY=card.offset().top;
+//   // window.scrollTo(cardX-20,cardY-20);
+//   // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
+//   $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
+// }
 
 function dragOver(ev)
 {
@@ -62,8 +62,7 @@ function render(node,vtype){
         // scroll2card(node._id);
         // setTimeout(_=>scroll2card(node._id),1000)
     }} 
-    draggable="true" onDragStart={drag}  
-    onDrop={drop} onDragOver={dragOver} >
+      >
     <pre>{JSON.stringify({id:node._id,link:node._link},null,2)}</pre>
     </div>
   </div>
