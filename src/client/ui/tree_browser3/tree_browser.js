@@ -43,6 +43,7 @@ function paste(from,to,tree,treetool){
 
 const menu=(node,tree,treetool)=>{
     return <div className="menu">
+              <button className="btn btn-default btn-xs"><i className="fa fa-arrows"></i></button>
               <button className="btn btn-default btn-xs" onClick={()=>{
                 clipboard=node._id;
               }}><i className="fa fa-cut"></i></button>
@@ -73,7 +74,14 @@ const TreeBrowser=(props)=>{
             {render(node)}
             {menu(node,tree,treetool)}
           </div>
-          {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>{render(vnode)}{node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}</div>}
+          {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>
+          <div className="node">
+            <div  className="main">
+            {render(vnode)}
+            </div>
+          </div>
+          {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others}/>)}
+          </div>}
         </div>
         
     );

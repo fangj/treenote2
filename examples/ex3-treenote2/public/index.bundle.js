@@ -68,18 +68,14 @@ webpackJsonp([0],[
 	    //虚节点,{_type:"vnode",_p:"pgid"}
 	    return _react2.default.createElement(
 	      'div',
-	      { className: 'node', onClick: function onClick() {
+	      { style: { height: "50px" }, onClick: function onClick() {
 	          tree.mk_son_by_data(node._p, "new").then(function (_) {
 	            console.log("publish updated ");
 	            PubSub.publish("TreeBrowser", { msg: "refresh" });
 	          });
 	        } },
-	      _react2.default.createElement(
-	        'div',
-	        { className: 'main' },
-	        '+',
-	        node._p
-	      )
+	      '+',
+	      node._p
 	    );
 	  }
 	  return _react2.default.createElement(
@@ -216,6 +212,11 @@ webpackJsonp([0],[
 	    { className: 'menu' },
 	    _react2.default.createElement(
 	      'button',
+	      { className: 'btn btn-default btn-xs' },
+	      _react2.default.createElement('i', { className: 'fa fa-arrows' })
+	    ),
+	    _react2.default.createElement(
+	      'button',
 	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
 	          clipboard = node._id;
 	        } },
@@ -269,7 +270,15 @@ webpackJsonp([0],[
 	    !_.includes(expands, node._id) ? null : _react2.default.createElement(
 	      'div',
 	      { className: cx("children", { focus: _.includes(node._link.children, focus) }) },
-	      render(vnode),
+	      _react2.default.createElement(
+	        'div',
+	        { className: 'node' },
+	        _react2.default.createElement(
+	          'div',
+	          { className: 'main' },
+	          render(vnode)
+	        )
+	      ),
 	      node._children.map(function (node) {
 	        return _react2.default.createElement(TreeBrowser, _extends({ key: node._id, node: node }, others));
 	      })
