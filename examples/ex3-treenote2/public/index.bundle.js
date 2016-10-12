@@ -28,6 +28,7 @@ webpackJsonp([0],[
 	var tree = __webpack_require__(19)("_api");
 
 	function scroll2card(id) {
+	  //已经移到tree_browser中
 	  var card = $("#" + id);
 	  var cardX = card.offset().left;
 	  var cardY = card.offset().top;
@@ -179,7 +180,13 @@ webpackJsonp([0],[
 	  var card = $("#" + id);
 	  if (!card) return;
 	  var cardX = card.offset().left;
-	  $('html,body').animate({ scrollLeft: cardX - 200 }, 800); //只改变横坐标
+	  var cardY = card.offset().top;
+	  var newPos = { scrollLeft: cardX - 200 };
+	  if (cardY > window.scrollY + window.innerHeight / 2) {
+	    //如果卡片位置在屏幕的下半部分以下。则移动到屏幕上部
+	    newPos.scrollTop = cardY - 20;
+	  }
+	  $('html,body').animate(newPos, 800); //只改变横坐标
 	}
 
 	function isDescendant(target, source, treetool) {

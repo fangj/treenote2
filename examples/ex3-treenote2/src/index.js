@@ -7,7 +7,7 @@ var PubSub =require('pubsub-js');
 
 var tree=require('treenote2/src/client/tree-cache.js')("_api");
 
-function scroll2card(id){
+function scroll2card(id){ //已经移到tree_browser中
   var card=$("#"+id);
   var cardX=card.offset().left;
   var cardY=card.offset().top;
