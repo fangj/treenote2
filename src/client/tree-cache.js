@@ -79,9 +79,6 @@ function mk_son_by_name(pgid, name) {
     cache.del(pgid);//删除旧的父节点
     return node;//返回新的子节点
   });
-
-function __check_has_gid(gid){
-  console.log("__check_has_gid",gid,cache.has(gid));
 }
 
 function _remove_parent_from_cache(gid){
