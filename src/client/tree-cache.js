@@ -7,12 +7,13 @@ const api = {
   read,
   read_nodes,
   mk_son_by_data,
+  mk_son_by_name,
   mk_brother_by_data,
   remove,
   update,
   mv_as_son,
   mv_as_brother,
-  read_big_node
+  read_big_node,
 };
 function factory(_prefix) {
   _api=require('./tree')(_prefix);
@@ -65,6 +66,14 @@ function read_nodes(gids) {
 
 function mk_son_by_data(pgid, data) {
   return _api.mk_son_by_data(pgid, data).then(node =>{
+    cache.set(node._id,node);//更新子节点
+    cache.del(pgid);//删除旧的父节点
+    return node;//返回新的子节点
+  });
+}
+
+function mk_son_by_name(pgid, name) {
+  return _api.mk_son_by_name(pgid, name).then(node =>{
     cache.set(node._id,node);//更新子节点
     cache.del(pgid);//删除旧的父节点
     return node;//返回新的子节点

@@ -11,6 +11,7 @@ function tree_nedb(_db,cb){
     read_node,
     read_nodes,
     mk_son_by_data,
+    mk_son_by_name,
     mk_brother_by_data,
     update_data,
     remove,
@@ -80,6 +81,28 @@ function _mk_son_by_data(pNode,data,bgid){
   })();
 }
 
+function _mk_son_by_name(pNode,name,bgid){
+  return async(function(){
+    // console.log(pNode);
+    var newNode={
+        _link: {
+          p: pNode._id,
+          children: []
+        },
+        _name:name
+    };
+    var _newNode= await(db.insertAsync(newNode));//插入新节点
+    var pos=0;
+    var children=pNode._link.children;
+    if(bgid){
+      pos=children.indexOf(bgid)+1;
+    }
+    children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
+    await(db.updateAsync({_id:pNode._id}, pNode, {}));//插入父节点
+    return _newNode;//返回新节点
+  })();
+}
+
 function mk_son_by_data(pgid, data) {
   return async(function(){
     var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
@@ -88,6 +111,21 @@ function mk_son_by_data(pgid, data) {
       return null;//父节点不存在，无法插入，返回null
     }
     return _mk_son_by_data(pNode,data);
+  })();
+}
+
+function mk_son_by_name(pgid, name) {
+  return async(function(){
+    var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
+    if(!pNode){
+      throw ('cannot find parent node '+pgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
+    var node=await(db.findOneAsync({"_name":name}));//是否已有同名节点
+    if(node){
+      return node;//如有直接返回
+    }
+    return _mk_son_by_name(pNode,name);
   })();
 }
 

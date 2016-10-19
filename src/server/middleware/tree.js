@@ -34,6 +34,19 @@ function factory(config) {
     });
   });
 
+  router.post('/mk/son_name/:gid', 
+    function(req, res, next) {
+    logger.debug(req.body);
+
+    tree.mk_son_by_name(req.params.gid, req.body.name).then(node => {
+      // logger.debug(node);
+      res.json(node);
+    }).catch(e => {
+      logger.error(e);
+      res.status(500).end();
+    });
+  });
+
 
   router.post('/mk/brother/:bgid', 
     function(req, res, next) {
