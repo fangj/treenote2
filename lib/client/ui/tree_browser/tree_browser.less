@@ -1,5 +1,4 @@
 .node{
-  width:250px;
   position:relative;
   .main{
     width:100%;
@@ -9,4 +8,76 @@
     left: 100%;
     top:0;
   }
+}
+//custome style
+
+.node{
+  box-sizing: border-box;
+  // width: 50px;
+  // height:50px;
+  width: 250px;
+
+  .main{
+    // min-height: 50px;
+    height: 100%;
+    overflow: hidden;
+    border: 1px dashed gray;
+  }
+
+}
+
+@focus-w:600px;
+
+.node.focus{
+  width: @focus-w; //for root
+  >.main{
+    border: 2px solid black;
+  }
+}
+.children.focus{
+  >.node{
+    width: @focus-w;
+  }
+}
+
+.node{
+    transition-duration:0.8s;
+}
+
+@menu-w:160px;
+@menu-h:24px;
+.menu{
+      position: absolute;
+      // left: 100%;
+      left: 0;
+      // margin-left: -@menu-w;
+      bottom:0;
+      width: @menu-w;
+      height:@menu-h;
+      // border: 1px solid black;
+      display: none;
+      box-sizing: border-box;
+      // text-align: right;
+    }
+.main:hover .menu{
+  display: block;
+}
+//新元素动画
+@keyframes myfirst
+{
+from {opacity: 0;}
+to {opacity: 1;}
+}
+//隐藏root元素
+.node.hideRoot{
+  width:0;
+}
+.main{
+  animation: myfirst 1s;
+}
+//placeholder
+div.placeholder {background: rgb(255,240,120);}
+div.placeholder:before {
+  content: "<";
+  color: rgb(225,210,90);
 }

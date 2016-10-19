@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-// import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
-import TreeBrowser from 'treenote2/src/client/ui/tree_browser3';
+import TreeBrowser from 'treenote2/src/client/ui/tree_browser';
 import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 var PubSub =require('pubsub-js');
 
