@@ -11,7 +11,7 @@ describe('tree', function(){
 
     it('should read_nodes ', function(done){
       async(function(){
-         var son= await(treetool.createNodeByPath('0','hello/world'));
+         var son= await(treetool.createNodeByPath('0/hello/world'));
         console.log(son)
         done();
     })()

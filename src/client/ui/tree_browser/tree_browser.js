@@ -96,33 +96,54 @@ export default class tree_browser extends React.Component {
   }
   render() {
   	var {root,...others}=this.state;
+    var {focus,expands}=this.state;
+    if(hasSlash(root)||hasSlash(root)||_.some(expands, hasSlash)){ 
+      return null;//如果有用路径表示的节点，需要转化为gid形式再显示
+    }
   	return <TreeNodeReader gid={root}  view={TreeBrowser}  {...others} level={1}/>
   }
   componentDidMount() {
     const me=this;
     const {node,tree}=this.props;
     const treetool=require('treenote2/src/client/tool')(tree);
+
+    //处理点击卡片后收到的消息
     function mysubscriber(target,data){
      console.log('got',target,data);
-     if(data.msg=='focus'){
+     if(data.msg=='focus'){ //设置焦点
        const focus=data.gid;
        const pgid=data.pgid;
        var {expands}=me.state;
        expands=buildExpandsWithFocus(expands,focus,pgid);
        me.setState({focus,expands});
-     }else if(data.msg=='refresh'){
+     }else if(data.msg=='refresh'){ //刷新视图
       me.forceUpdate();
-     }else if(data.msg=='move'){
+     }else if(data.msg=='move'){ //移动卡片
       paste(data.gid,data.bgid,tree,treetool);
      }
     }
     this.token=PubSub.subscribe("TreeBrowser",mysubscriber)
+
+    //把路径转换为gid形式
+    var {root,focus,expands}=this.state;
+    const _path2gid=_.curry(path2gid)(treetool);//单参数函数fn(gidOrPath)
+    const together=[root,focus,...expands];//合并一下方便处理
+    Promise.all(together.map(_path2gid)).then(([root,focus,...expands])=>{
+      me.setState({root,focus,expands});
+    })
+
   }
   componentDidUpdate(prevProps, prevState) {
     const {focus}=this.state;
     d.scroll2card(focus);
     d.ensureFocusColumn(focus);
   }
+}
+
+const hasSlash=(str)=>str.indexOf('/')>-1;
+
+function path2gid(treetool,gidOrPath){
+  return hasSlash(gidOrPath)?treetool.createNodeByPath(gidOrPath).then(node=>node._id):Promise.resolve(gidOrPath);//有斜杠的视为路径，没有的视为gid直接返回
 }
 
 function buildExpandsWithFocus(expands,focus,pgid) {

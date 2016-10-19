@@ -75,8 +75,10 @@ function createChildByName(pgid,name){
  * @param  {Array}
  * @return {Promise<String>}
  */
-function createNodeByPath(gid,path){
-    const paths=path.split('/');
+function createNodeByPath(path){
+    //path="0/abc/def" gid加上路径的形式表达
+    var paths=path.split('/');
+    var gid=paths.shift();//移出第一个gid，剩下部分为路径
     const f=(P,name)=>P.then(pnode=>createChildByName(pnode._id,name));
     return paths.reduce(f,tree.read(gid));
 }
