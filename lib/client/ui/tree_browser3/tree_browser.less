@@ -18,7 +18,7 @@
   width: 250px;
 
   .main{
-    min-height: 50px;
+    // min-height: 50px;
     height: 100%;
     overflow: hidden;
     border: 1px dashed gray;
@@ -26,15 +26,17 @@
 
 }
 
+@focus-w:600px;
+
 .node.focus{
-  width: 800px; //for root
+  width: @focus-w; //for root
   >.main{
     border: 2px solid black;
   }
 }
 .children.focus{
   >.node{
-    width: 800px;
+    width: @focus-w;
   }
 }
 
@@ -46,23 +48,36 @@
 @menu-h:24px;
 .menu{
       position: absolute;
-      left: 100%;
-      margin-left: -@menu-w;
+      // left: 100%;
+      left: 0;
+      // margin-left: -@menu-w;
       bottom:0;
       width: @menu-w;
       height:@menu-h;
       // border: 1px solid black;
       display: none;
       box-sizing: border-box;
-      text-align: right;
+      // text-align: right;
     }
 .main:hover .menu{
   display: block;
 }
-
-//drag drop
-li.placeholder {background: rgb(255,240,120);}
-li.placeholder:before {
-  content: "Drop here";
+//新元素动画
+@keyframes myfirst
+{
+from {opacity: 0;}
+to {opacity: 1;}
+}
+//隐藏root元素
+.node.hideRoot{
+  width:0;
+}
+.main{
+  animation: myfirst 1s;
+}
+//placeholder
+div.placeholder {background: rgb(255,240,120);}
+div.placeholder:before {
+  content: "<";
   color: rgb(225,210,90);
 }

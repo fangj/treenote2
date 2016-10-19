@@ -1,7 +1,6 @@
-var LRU = require('lru-cache')
-  , cache= LRU(5000);
+var LRU = require('lru-cache') , cache= LRU(5000); 
 var _=require('lodash');
-
+// var cache=require('./cache');//LRU cache没有问题，是删除sgid父节点后又误读取了父节点（dgid）
 var _api;
 const api = {
   read,
@@ -49,6 +48,7 @@ function read_nodes(gids) {
       unCachedGids.push(gid);
     }
   });
+  console.log('read_nodes',gids,'unCachedGids',unCachedGids)
   if (unCachedGids.length === 0) {
     return Promise.resolve(cachedNodes.map(clone)); //全在cache中直接返回 //返回克隆避免缓存被修改
   }
@@ -72,16 +72,21 @@ function mk_son_by_data(pgid, data) {
   });
 }
 
+
 function mk_son_by_name(pgid, name) {
   return _api.mk_son_by_name(pgid, name).then(node =>{
     cache.set(node._id,node);//更新子节点
     cache.del(pgid);//删除旧的父节点
     return node;//返回新的子节点
   });
+
+function __check_has_gid(gid){
+  console.log("__check_has_gid",gid,cache.has(gid));
 }
 
 function _remove_parent_from_cache(gid){
   return api.read(gid).then(node=>{
+    console.log("_remove_parent_from_cache",node._link.p)
     cache.del(node._link.p);
   });
 }
@@ -135,8 +140,8 @@ function  mv_as_son(sgid,dgid){
 }
 
 function  mv_as_brother(sgid,dgid){
-  return _remove_parent_from_cache(sgid)
-  .then(_=>_remove_parent_from_cache(dgid))
+  return _remove_parent_from_cache(dgid) //顺序重要！要先删除目标节点dgid的父节点，因为目标节点dgid可能是sgid的父节点
+  .then(_=>_remove_parent_from_cache(sgid))
   .then(_=>_api.mv_as_brother(sgid,dgid).then(node=>{
     cache.set(node._id,node);
     return node;
