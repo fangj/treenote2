@@ -7,9 +7,13 @@ AV.init({
 });
 const Node = AV.Object.extend('Node');
 
-const findNodeByGid= async (gid)=>{
+const findNodeByGidAsync= async (gid)=>{
   var query = new AV.Query('Node');
-  query.equalTo('node.gid', gid);
+  var id_query = new AV.Query('Node');
+  var gid_query = new AV.Query('Node');
+  id_query.equalTo('id', gid);
+  gid_query.equalTo('node.gid', gid);
+  var query = AV.Query.or(id_query, gid_query);
   var node,NotFound=false;
   try{
     node=await query.first();
@@ -22,13 +26,36 @@ const findNodeByGid= async (gid)=>{
   return node;
 }
 
+const updateNodeByGidAsync=async (gid,_node)=>{
+  // 第一个参数是 className，第二个参数是 objectId
+  var node = AV.Object.createWithoutData('Node', gid);
+  // 修改属性
+  node.set('node', _node);
+  // 保存到云端
+  node.save();
+}
+
+const insertNode=async (_node)=>{
+  console.log("insertNode",_node)
+    var node =new Node();
+    node.set('node',_node);
+    return node.save();
+}
+
+const getNode=(node)=>{
+  var _node= node.get("node");
+  var id=_node.gid||node.get("id");
+  _node._id=id;
+  return _node;
+}
+
 
 function tree_leancloud(cb){
   buildRootIfNotExist(cb);
   return {
     // read_node,
     // read_nodes,
-    // mk_son_by_data,
+    mk_son_by_data,
     // mk_son_by_name,
     // mk_brother_by_data,
     // update_data,
@@ -44,32 +71,18 @@ module.exports=tree_leancloud;
 
 function buildRootIfNotExist(cb){
   return (async ()=>{
-    // var query = new AV.Query('Node');
-    // query.equalTo('node.gid', '0');
-    // var root,NotFound=false;
-    // try{
-    //   root=await query.first();
-    // }catch(e){
-    //   if(e.code==101){
-    //     NotFound=true;//{ [Error: Class or object doesn't exists.] code: 101 }
-    //   }
-    // }
-    var root=await findNodeByGid('0');
+    var root=await findNodeByGidAsync('0');
     if(!root){
       console.log('no root')
+      var defaultRoot={
+        gid:'0', 
+        _link: {
+          p: '0',
+          children: []
+        }
+      };
       try{
-        var defaultRoot={
-          gid:'0', 
-          _link: {
-            p: '0',
-            children: []
-          }
-        };
-        root =new Node();
-        // root.set('_id',defaultRoot._id);
-        // root.set('_link',defaultRoot._link);
-        root.set('node',defaultRoot);
-        root=await root.save();
+        root=await insertNode(defaultRoot);
       }catch(e){
         console.log(e)
       }
@@ -77,7 +90,7 @@ function buildRootIfNotExist(cb){
     if(typeof cb =='function'){
       cb(); //通知root构建完成
     }
-    return root.get("node");
+    return getNode(root);
   })();
 }
 
@@ -96,27 +109,28 @@ function buildRootIfNotExist(cb){
 //   })();
 // }
 
-// function _mk_son_by_data(pNode,data,bgid){
-//   return async(function(){
-//     // console.log(pNode);
-//     var newNode={
-//         _link: {
-//           p: pNode._id,
-//           children: []
-//         },
-//         _data:data
-//     };
-//     var _newNode= await(db.insertAsync(newNode));//插入新节点
-//     var pos=0;
-//     var children=pNode._link.children;
-//     if(bgid){
-//       pos=children.indexOf(bgid)+1;
-//     }
-//     children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
-//     await(db.updateAsync({_id:pNode._id}, pNode, {}));//插入父节点
-//     return _newNode;//返回新节点
-//   })();
-// }
+function _mk_son_by_data(pNode,data,bgid){
+  return (async ()=>{
+    // console.log(pNode);
+    var newNode={
+        _link: {
+          p: pNode._id,
+          children: []
+        },
+        _data:data
+    };
+    var _newNode= await insertNode(newNode);//插入新节点
+    newNode=getNode(_newNode);
+    var pos=0;
+    var children=pNode._link.children;
+    if(bgid){
+      pos=children.indexOf(bgid)+1;
+    }
+    children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
+    await updateNodeByGidAsync(pNode._id,pNode);
+    return newNode;//返回新节点
+  })();
+}
 
 // function _mk_son_by_name(pNode,name,bgid){
 //   return async(function(){
@@ -142,7 +156,7 @@ function buildRootIfNotExist(cb){
 
 function mk_son_by_data(pgid, data) {
   return (async ()=>{
-    var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
+    var pNode=await findNodeByGidAsync(pgid) ;//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
