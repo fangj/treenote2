@@ -7,33 +7,47 @@ AV.init({
 });
 const AVNode = AV.Object.extend('Node');
 
-const findNodeByGidAsync= async (gid)=>{
-  var node;
+const findAVNodeByGidAsync= async (gid)=>{
+  var avnode;
   var query = new AV.Query('Node');
   if(gid==='0'){//根节点的id放在node.gid中
     query.equalTo('node.gid', gid);
     try{
-      node=await query.first();
+      avnode=await query.first();
     }catch(e){
       console.error(e);//找不到时会抛出错误
     }
   }else{
-    node=query.get(gid)//普通节点的id就是ObjectID
+    avnode=query.get(gid)//普通节点的id就是ObjectID
+    if(avnode && avnode.get('_rm')){//rm表示节点已经删除
+      return null;
+    }
   }
-  return t(node);
+  return avnode;
+}
+
+const findNodeByGidAsync= async (gid)=>{
+  var avnode=await findAVNodeByGidAsync(gid);
+  return t(avnode);
 }
 
 const updateNodeByGidAsync=async (gid,node)=>{
-  // 第一个参数是 className，第二个参数是 objectId
-  var avnode = AV.Object.createWithoutData('Node', gid);
+  var avnode;
+  if(gid==='0'){
+    avnode = await findAVNodeByGidAsync(gid);
+  }else{
+    // 第一个参数是 className，第二个参数是 objectId
+    avnode = AV.Object.createWithoutData('Node', gid);
+  }
   // 修改属性
   avnode.set('node', node);
   // 保存到云端
-  avnode.save();
+  var updatedNode= await avnode.save();
+  return t(updatedNode);
 }
 
 const insertNode=async (node)=>{
-  console.log("insertNode",node)
+  // console.log("insertNode",node)
     var avnode =new AVNode();
     avnode.set('node',node);
     avnode=await avnode.save();
@@ -41,6 +55,9 @@ const insertNode=async (node)=>{
 }
 
 const t=(avnode)=>{ //取出leancloud中的node数据，并把id附上
+  if(!avnode){
+    return null;
+  }
   var node= avnode.get("node");
   if(node.gid==='0'){
     node._id='0'; //根节点
@@ -54,11 +71,11 @@ const t=(avnode)=>{ //取出leancloud中的node数据，并把id附上
 function tree_leancloud(cb){
   buildRootIfNotExist(cb);
   return {
-    // read_node,
+    read_node,
     // read_nodes,
     mk_son_by_data,
     // mk_son_by_name,
-    // mk_brother_by_data,
+    mk_brother_by_data,
     // update_data,
     // remove,
     // move_as_son,
@@ -71,8 +88,11 @@ function tree_leancloud(cb){
 module.exports=tree_leancloud;
 
 function buildRootIfNotExist(cb){
+  // console.log("buildRootIfNotExist")
   return (async ()=>{
+    // console.log("buildRootIfNotExist begin")
     var root=await findNodeByGidAsync('0');
+    console.log("root",root)
     if(!root){
       console.log('no root')
       var defaultRoot={
@@ -95,13 +115,9 @@ function buildRootIfNotExist(cb){
   })();
 }
 
-// function read_node(gid) {
-//   return async(function(){
-//     // console.log('read_node',gid);
-//     var node=await(db.findOneAsync({_id:gid, _rm: { $exists: false }})); //rm标记表示节点已经被删除
-//     return node;
-//   })();
-// }
+function read_node(gid) {
+  return findNodeByGidAsync(gid);
+}
 
 // function read_nodes(gids) {
 //   return async(function(){
@@ -180,16 +196,20 @@ function mk_son_by_data(pgid, data) {
 //   })();
 // }
 
-// function mk_brother_by_data(bgid,data) {
-//   return async(function(){
-//     var pNode=await(db.findOneAsync({"_link.children":{$elemMatch:bgid}}));//找到父节点
-//     if(!pNode){
-//       throw ('cannot find parent node of brother '+bgid);
-//       return null;//父节点不存在，无法插入，返回null
-//     }
-//     return _mk_son_by_data(pNode,data,bgid);
-//   })();
-// }
+function mk_brother_by_data(bgid,data) {
+  return (async ()=>{
+    var query = new AV.Query('Node');
+    query.contains('node._link.children',bgid);
+    var pAVNode=await query.first();//找到父节点
+    const pNode=t(pAVNode);
+    if(!pNode){
+      throw ('cannot find parent node of brother '+bgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
+    const node=await _mk_son_by_data(pNode,data,bgid);
+    return node;
+  })();
+}
 
 
 // function _update(db,query,update,callback){ 
