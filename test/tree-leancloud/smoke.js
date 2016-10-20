@@ -21,7 +21,7 @@ describe('tree', function(){
       async(function(){
         var root= await(tree.buildRootIfNotExist());
         assert.equal(typeof root,'object');
-        assert.equal(root.gid,'0');
+        assert.equal(root._id,'0');
         console.log(root)
         done();
     })()

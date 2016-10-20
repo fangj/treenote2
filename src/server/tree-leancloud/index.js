@@ -5,48 +5,49 @@ AV.init({
   appId: APP_ID,
   appKey: APP_KEY
 });
-const Node = AV.Object.extend('Node');
+const AVNode = AV.Object.extend('Node');
 
 const findNodeByGidAsync= async (gid)=>{
+  var node;
   var query = new AV.Query('Node');
-  var id_query = new AV.Query('Node');
-  var gid_query = new AV.Query('Node');
-  id_query.equalTo('id', gid);
-  gid_query.equalTo('node.gid', gid);
-  var query = AV.Query.or(id_query, gid_query);
-  var node,NotFound=false;
-  try{
-    node=await query.first();
-  }catch(e){
-    if(e.code==101){
-      NotFound=true;//{ [Error: Class or object doesn't exists.] code: 101 }
+  if(gid==='0'){//根节点的id放在node.gid中
+    query.equalTo('node.gid', gid);
+    try{
+      node=await query.first();
+    }catch(e){
+      console.error(e);//找不到时会抛出错误
     }
-    console.error(e);
+  }else{
+    node=query.get(gid)//普通节点的id就是ObjectID
+  }
+  return t(node);
+}
+
+const updateNodeByGidAsync=async (gid,node)=>{
+  // 第一个参数是 className，第二个参数是 objectId
+  var avnode = AV.Object.createWithoutData('Node', gid);
+  // 修改属性
+  avnode.set('node', node);
+  // 保存到云端
+  avnode.save();
+}
+
+const insertNode=async (node)=>{
+  console.log("insertNode",node)
+    var avnode =new AVNode();
+    avnode.set('node',node);
+    avnode=await avnode.save();
+    return t(avnode);
+}
+
+const t=(avnode)=>{ //取出leancloud中的node数据，并把id附上
+  var node= avnode.get("node");
+  if(node.gid==='0'){
+    node._id='0'; //根节点
+  }else{
+    node._id=avnode.get("id");
   }
   return node;
-}
-
-const updateNodeByGidAsync=async (gid,_node)=>{
-  // 第一个参数是 className，第二个参数是 objectId
-  var node = AV.Object.createWithoutData('Node', gid);
-  // 修改属性
-  node.set('node', _node);
-  // 保存到云端
-  node.save();
-}
-
-const insertNode=async (_node)=>{
-  console.log("insertNode",_node)
-    var node =new Node();
-    node.set('node',_node);
-    return node.save();
-}
-
-const getNode=(node)=>{
-  var _node= node.get("node");
-  var id=_node.gid||node.get("id");
-  _node._id=id;
-  return _node;
 }
 
 
@@ -90,7 +91,7 @@ function buildRootIfNotExist(cb){
     if(typeof cb =='function'){
       cb(); //通知root构建完成
     }
-    return getNode(root);
+    return root;
   })();
 }
 
@@ -120,7 +121,7 @@ function _mk_son_by_data(pNode,data,bgid){
         _data:data
     };
     var _newNode= await insertNode(newNode);//插入新节点
-    newNode=getNode(_newNode);
+    newNode=t(_newNode);
     var pos=0;
     var children=pNode._link.children;
     if(bgid){
