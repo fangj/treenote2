@@ -17,24 +17,24 @@ describe('tree', function(){
   })
 
 
-  it('should buildRootIfNotExist ', function(done){
-      async(function(){
-        var root= await(tree.buildRootIfNotExist());
-        assert.equal(typeof root,'object');
-        assert.equal(root._id,'0');
-        console.log(root)
-        done();
-    })()
-  })
-
-  //   it('should mk_son_by_data ', function(done){
+  // it('should buildRootIfNotExist ', function(done){
   //     async(function(){
-  //       var son= await(tree.mk_son_by_data('0','hello'));
-  //       assert.equal(typeof son,'object');
-  //       console.log(son)
+  //       var root= await(tree.buildRootIfNotExist());
+  //       assert.equal(typeof root,'object');
+  //       assert.equal(root._id,'0');
+  //       console.log(root)
   //       done();
   //   })()
-  // });
+  // })
+
+    it('should mk_son_by_data ', function(done){
+      async(function(){
+        var son= await(tree.mk_son_by_data('0','hello'));
+        assert.equal(typeof son,'object');
+        console.log(son)
+        done();
+    })()
+  });
 
   // it('should mk_brother_by_data ', function(done){
   //     async(function(){

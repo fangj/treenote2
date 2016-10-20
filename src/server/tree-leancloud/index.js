@@ -120,14 +120,13 @@ function _mk_son_by_data(pNode,data,bgid){
         },
         _data:data
     };
-    var _newNode= await insertNode(newNode);//插入新节点
-    newNode=t(_newNode);
+    newNode= await insertNode(newNode);//插入新节点
     var pos=0;
     var children=pNode._link.children;
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
-    children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
+    children.splice(pos,0,newNode._id);//把新节点的ID插入到父节点中
     await updateNodeByGidAsync(pNode._id,pNode);
     return newNode;//返回新节点
   })();
