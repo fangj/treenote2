@@ -11,8 +11,8 @@ function tree_leancloud(cb){
     mk_brother_by_data,
     update_data,
     remove,
-    // move_as_son,
-    // move_as_brother,
+    move_as_son,
+    move_as_brother,
     //for test
     buildRootIfNotExist
   }
@@ -280,14 +280,17 @@ function _move_as_son(gid, npAVNode,bgid){
     if(npAVNode.id===pAVNode.id){//如果新的父节点与旧的父节点相同。要更新父节点
       npAVNode=pAVNode; 
     }else{
-      await updateAVNodeByGidAsync(gid,avnode=>{avnode.set("node._link.p",npNode.id)})//改变gid的父节点为新父节点
+      await updateAVNodeByGidAsync(gid,avnode=>{avnode.set("node._link.p",npAVNode.id)})//改变gid的父节点为新父节点
     }
     var pos=0;
-    var children=npAVNode.get("node._link.children");
+    var npNode=t(npAVNode);
+    var children=npNode._link.children;
+    console.log('before',children)
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
+    console.log('after',children,npNode)
     await updateAVNodeByGidAsync(npNode._id,avnode=>{avnode.set("node._link.children",children)})//插入父节点
     return await read_node(gid);
   })();  
