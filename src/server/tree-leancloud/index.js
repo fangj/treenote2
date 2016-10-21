@@ -1,13 +1,37 @@
 const _=require('lodash');
+const AV=require('leancloud-storage');
+
+function tree_leancloud(cb){
+  buildRootIfNotExist(cb);
+  return {
+    read_node,
+    read_nodes,
+    mk_son_by_data,
+    // mk_son_by_name,
+    mk_brother_by_data,
+    update_data,
+    remove,
+    // move_as_son,
+    // move_as_brother,
+    //for test
+    buildRootIfNotExist
+  }
+}
+
+module.exports=tree_leancloud;
+
 var APP_ID = 'O5chE5oCrD64pIEimweTTno5-gzGzoHsz';
 var APP_KEY = 'PmdSTHdJk2Iy887QWH0yxBPx';
-const AV=require('leancloud-storage');
 AV.init({
   appId: APP_ID,
   appKey: APP_KEY
 });
 const AVNode = AV.Object.extend('Node');
-
+const findAVNodeAsync=(key,value)=>{
+  var query = new AV.Query('Node');
+  query.equalTo(key, value);
+  return query.first();
+}
 const findAVNodeByGidAsync= async (gid)=>{
   var avnode;
   var query = new AV.Query('Node');
@@ -76,26 +100,6 @@ const t=(avnode)=>{ //取出leancloud中的node数据，并把id附上
   return node;
 }
 
-
-function tree_leancloud(cb){
-  buildRootIfNotExist(cb);
-  return {
-    read_node,
-    read_nodes,
-    mk_son_by_data,
-    // mk_son_by_name,
-    mk_brother_by_data,
-    update_data,
-    remove,
-    // move_as_son,
-    // move_as_brother,
-    //for test
-    buildRootIfNotExist
-  }
-}
-
-module.exports=tree_leancloud;
-
 function buildRootIfNotExist(cb){
   // console.log("buildRootIfNotExist")
   return (async ()=>{
@@ -136,16 +140,16 @@ function read_nodes(gids) {
   })();
 }
 
-function _mk_son_by_data(pNode,data,bgid){
+function _mk_son_by_kv(pNode,key,value,bgid){
   return (async ()=>{
     // console.log(pNode);
     var newNode={
         _link: {
           p: pNode._id,
           children: []
-        },
-        _data:data
+        }
     };
+    newNode[key]=value;
     newNode= await insertNode(newNode);//插入新节点
     var pos=0;
     var children=pNode._link.children;
@@ -158,27 +162,13 @@ function _mk_son_by_data(pNode,data,bgid){
   })();
 }
 
-// function _mk_son_by_name(pNode,name,bgid){
-//   return async(function(){
-//     // console.log(pNode);
-//     var newNode={
-//         _link: {
-//           p: pNode._id,
-//           children: []
-//         },
-//         _name:name
-//     };
-//     var _newNode= await(db.insertAsync(newNode));//插入新节点
-//     var pos=0;
-//     var children=pNode._link.children;
-//     if(bgid){
-//       pos=children.indexOf(bgid)+1;
-//     }
-//     children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
-//     await(db.updateAsync({_id:pNode._id}, pNode, {}));//插入父节点
-//     return _newNode;//返回新节点
-//   })();
-// }
+function _mk_son_by_data(pNode,data,bgid){
+  return _mk_son_by_kv(pNode,"_data",data,bgid);
+}
+
+function _mk_son_by_name(pNode,name,bgid){
+  return _mk_son_by_kv(pNode,"_name",name,bgid);
+}
 
 function mk_son_by_data(pgid, data) {
   return (async ()=>{
@@ -187,24 +177,24 @@ function mk_son_by_data(pgid, data) {
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    return _mk_son_by_data(pNode,data);
+    return await _mk_son_by_data(pNode,data);
   })();
 }
 
-// function mk_son_by_name(pgid, name) {
-//   return async(function(){
-//     var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
-//     if(!pNode){
-//       throw ('cannot find parent node '+pgid);
-//       return null;//父节点不存在，无法插入，返回null
-//     }
-//     var node=await(db.findOneAsync({"_name":name}));//是否已有同名节点
-//     if(node){
-//       return node;//如有直接返回
-//     }
-//     return _mk_son_by_name(pNode,name);
-//   })();
-// }
+function mk_son_by_name(pgid, name) {
+  return (async ()=>{
+    var pNode=await findNodeByGidAsync(pgid) ;//找到父节点
+    if(!pNode){
+      throw ('cannot find parent node '+pgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
+    var avnode=await findAVNodeAsync("node._name",name);
+    if(avnode){
+      return t(avnode);//如有直接返回
+    }
+    return await _mk_son_by_name(pNode,name);
+  })();
+}
 
 function mk_brother_by_data(bgid,data) {
   return (async ()=>{
