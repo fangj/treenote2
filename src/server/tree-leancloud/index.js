@@ -32,7 +32,7 @@ const findNodeByGidAsync= async (gid)=>{
   return t(avnode);
 }
 
-const updateNodeByGidAsync=async (gid,updater)=>{
+const updateAVNodeByGidAsync=async (gid,updater)=>{
   var avnode;
   if(gid==='0'){
     avnode = await findAVNodeByGidAsync(gid);
@@ -48,9 +48,9 @@ const updateNodeByGidAsync=async (gid,updater)=>{
 }
 
 const _createWithoutData=_.curry(AV.Object.createWithoutData);
-const createNodeWithoutData=_createWithoutData('Node');//fn(id)
-const updateNodesByGidsAsync=(gids,updater)=>{
-  const nodes=gids.map(createNodeWithoutData);
+const createAVNodeWithoutData=_createWithoutData('Node');//fn(id)
+const updateAVNodesByGidsAsync=(gids,updater)=>{
+  const nodes=gids.map(createAVNodeWithoutData);
   nodes.map(updater);
   return AV.Object.saveAll(nodes);
 }
@@ -85,7 +85,7 @@ function tree_leancloud(cb){
     mk_son_by_data,
     // mk_son_by_name,
     mk_brother_by_data,
-    // update_data,
+    update_data,
     remove,
     // move_as_son,
     // move_as_brother,
@@ -130,7 +130,7 @@ function read_node(gid) {
 
 function read_nodes(gids) {
   return (async ()=>{
-    const nodes=gids.map(createNodeWithoutData);
+    const nodes=gids.map(createAVNodeWithoutData);
     const avnodes=await AV.Object.fetchAll(nodes);
     return avnodes.map(t);
   })();
@@ -153,7 +153,7 @@ function _mk_son_by_data(pNode,data,bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,newNode._id);//把新节点的ID插入到父节点中
-    await updateNodeByGidAsync(pNode._id,(avnode)=>{avnode.set('node._link.children',children)});
+    await updateAVNodeByGidAsync(pNode._id,(avnode)=>{avnode.set('node._link.children',children)});
     return newNode;//返回新节点
   })();
 }
@@ -232,12 +232,9 @@ function mk_brother_by_data(bgid,data) {
 
 // const update=Promise.promisify(_update);//修改callback签名后就可以promisify
 
-// function update_data(gid, data) {
-//   return async(function(){
-//     var node=await(update(db,{_id:gid}, { $set: { _data: data } }));//更新节点并返回更新后的节点
-//     return node;
-//   })();
-// }
+function update_data(gid, data) {
+  return updateAVNodeByGidAsync(gid,avnode=>avnode.set("node.data",data)).then(t);
+}
 
 
 //递归遍历所有子节点
@@ -266,8 +263,8 @@ function remove(gid) {
      await _traversal_all_children([gid],rm);
      //批量删除//标记为删除
      const setRm=(avnode)=>{avnode.set("_rm",true);}
-     await updateNodesByGidsAsync(gidsforRemove,setRm);
-     await updateNodeByGidAsync(node._link.p,(avnode)=>{avnode.remove("node._link.children",gid)})
+     await updateAVNodesByGidsAsync(gidsforRemove,setRm);
+     await updateAVNodeByGidAsync(node._link.p,(avnode)=>{avnode.remove("node._link.children",gid)})
      return gidsforRemove;
   })();
 }

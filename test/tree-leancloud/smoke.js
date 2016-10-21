@@ -54,13 +54,13 @@ describe('tree', function(){
   //   })()
   // });
 
-  // it('should update_data ', function(done){
-  //     async(function(){
-  //       var n= await(tree.update_data('0','hello'));
-  //       console.log('n',n);
-  //       done();
-  //   })()
-  // });
+  it('should update_data ', function(done){
+      async(function(){
+        var n= await(tree.update_data('0','hello'));
+        console.log('n',n);
+        done();
+    })()
+  });
 
 
   // it('should remove ', function(done){
@@ -91,13 +91,13 @@ describe('tree', function(){
   //   })()
   // });
   
-    it('should read_nodes ', function(done){
-      async(function(){
-        var n= await(tree.read_node('0'));
-        var nodes=await(tree.read_nodes(n._link.children));
-        console.log(nodes)
-        done();
-    })()
-  });
+  //   it('should read_nodes ', function(done){
+  //     async(function(){
+  //       var n= await(tree.read_node('0'));
+  //       var nodes=await(tree.read_nodes(n._link.children));
+  //       console.log(nodes)
+  //       done();
+  //   })()
+  // });
 
 });
