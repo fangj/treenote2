@@ -63,17 +63,17 @@ describe('tree', function(){
   // });
 
 
-  it('should remove ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
-        var gson= await(tree.mk_son_by_data(son._id,'world'));
-        console.log("mk 2 nodes for delete",son,gson);
-        var removed_gids=await(tree.remove(son._id));
-        console.log(removed_gids)
-        assert.deepEqual(removed_gids.sort(),[son._id,gson._id].sort())
-        done();
-    })()
-  });
+  // it('should remove ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_data('0','hello'));
+  //       var gson= await(tree.mk_son_by_data(son._id,'world'));
+  //       console.log("mk 2 nodes for delete",son,gson);
+  //       var removed_gids=await(tree.remove(son._id));
+  //       console.log(removed_gids)
+  //       assert.deepEqual(removed_gids.sort(),[son._id,gson._id].sort())
+  //       done();
+  //   })()
+  // });
 
   //   it('should move as son ', function(done){
   //     async(function(){
@@ -90,5 +90,14 @@ describe('tree', function(){
   //       done();
   //   })()
   // });
+  
+    it('should read_nodes ', function(done){
+      async(function(){
+        var n= await(tree.read_node('0'));
+        var nodes=await(tree.read_nodes(n._link.children));
+        console.log(nodes)
+        done();
+    })()
+  });
 
 });

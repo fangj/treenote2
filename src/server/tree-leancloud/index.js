@@ -81,7 +81,7 @@ function tree_leancloud(cb){
   buildRootIfNotExist(cb);
   return {
     read_node,
-    // read_nodes,
+    read_nodes,
     mk_son_by_data,
     // mk_son_by_name,
     mk_brother_by_data,
@@ -128,12 +128,13 @@ function read_node(gid) {
   return findNodeByGidAsync(gid);
 }
 
-// function read_nodes(gids) {
-//   return async(function(){
-//     var nodes=await(db.findAsync({_id:{$in:gids},_rm: { $exists: false }}));
-//     return nodes;
-//   })();
-// }
+function read_nodes(gids) {
+  return (async ()=>{
+    const nodes=gids.map(createNodeWithoutData);
+    const avnodes=await AV.Object.fetchAll(nodes);
+    return avnodes.map(t);
+  })();
+}
 
 function _mk_son_by_data(pNode,data,bgid){
   return (async ()=>{
