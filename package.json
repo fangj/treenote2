@@ -21,6 +21,7 @@
     "leanengine": "^1.2.2",
     "log4js": "^0.6.38",
     "lru-cache": "^4.0.1",
+    "mongodb": "^2.2.10",
     "multer": "^1.2.0",
     "pubsub-js": "^1.5.3",
     "qiniu": "^6.1.11",
