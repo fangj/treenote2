@@ -213,10 +213,10 @@ function _move_as_son(gid, npNode,bgid){
 
     await(db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
     if(npNode._id===pNode._id){//如果新的父节点与旧的父节点相同。要更新父节点
-      npNode=await(db.findOneAsync({_id:pNode._id, _rm: { $exists: false }})); 
+      npNode=await(db.findOneAsync({_id:npNode._id, _rm: { $exists: false }})); 
+    }else{
+      await(db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {}));//改变gid的父节点为新父节点
     }
-
-    await(db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {}));//改变gid的父节点为新父节点
     var pos=0;
     var children=npNode._link.children;
     if(bgid){

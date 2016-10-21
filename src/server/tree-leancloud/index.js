@@ -32,6 +32,11 @@ const findAVNodeAsync=(key,value)=>{
   query.equalTo(key, value);
   return query.first();
 }
+const findParentAVNodeAsync=(gid)=>{
+  var query = new AV.Query('Node');
+  query.contains("node._link.children", gid);
+  return query.first();//找到新父节点
+}
 const findAVNodeByGidAsync= async (gid)=>{
   var avnode;
   var query = new AV.Query('Node');
@@ -212,16 +217,6 @@ function mk_brother_by_data(bgid,data) {
 }
 
 
-// function _update(db,query,update,callback){ 
-//     var cb=function(err, numAffected, affectedDocuments, upsert){
-//       callback(err,affectedDocuments);//修改callback的签名，使得第二个参数为更新过的doc
-//     };
-//     var options={ multi: false,returnUpdatedDocs:true };
-//     db.update(query, update, options,cb);
-// }
-
-// const update=Promise.promisify(_update);//修改callback签名后就可以promisify
-
 function update_data(gid, data) {
   return updateAVNodeByGidAsync(gid,avnode=>avnode.set("node.data",data)).then(t);
 }
@@ -259,57 +254,58 @@ function remove(gid) {
   })();
 }
 
-// function _isAncestor(pgid,gid){
-//   if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
-//   return read_node(gid).then(node=>{
-//     // console.log('check',pgid,node._link.p,node)
-//     if(node._link.p===pgid){
-//       return true;
-//     }else{
-//       return _isAncestor(pgid,node._link.p);
-//     }
-//   })
-// }
+function _isAncestor(pgid,gid){
+  if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
+  return read_node(gid).then(node=>{
+    // console.log('check',pgid,node._link.p,node)
+    if(node._link.p===pgid){
+      return true;
+    }else{
+      return _isAncestor(pgid,node._link.p);
+    }
+  })
+}
 
-// function _move_as_son(gid, npNode,bgid){
-//   return async(function(){
-//     var gidIsAncestorOfNewParentNode=await(_isAncestor(gid,npNode._id));
-//     if(gidIsAncestorOfNewParentNode){
-//       console.log(gid,'is ancestor of',npNode._id)
-//       return null;//要移动的节点不能是目标父节点的长辈节点
-//     }
-//     var pNode=await(db.findOneAsync({"_link.children":{$elemMatch:gid}}));//找到原父节点
+function _move_as_son(gid, npAVNode,bgid){
+  return (async ()=>{
+    var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npAVNode.id) ;
+    if(gidIsAncestorOfNewParentNode){
+      console.log(gid,'is ancestor of',npAVNode.id)
+      return null;//要移动的节点不能是目标父节点的长辈节点
+    }
+    var pAVNode=await findParentAVNodeAsync(gid)//找到原父节点
+    pAVNode.remove('node._link.children', gid);//从原父节点删除
+    await pAVNode.save();
 
-//     await(db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
-//     if(npNode._id===pNode._id){//如果新的父节点与旧的父节点相同。要更新父节点
-//       npNode=await(db.findOneAsync({_id:pNode._id, _rm: { $exists: false }})); 
-//     }
+    if(npAVNode.id===pAVNode.id){//如果新的父节点与旧的父节点相同。要更新父节点
+      npAVNode=pAVNode; 
+    }else{
+      await updateAVNodeByGidAsync(gid,avnode=>{avnode.set("node._link.p",npNode.id)})//改变gid的父节点为新父节点
+    }
+    var pos=0;
+    var children=npAVNode.get("node._link.children");
+    if(bgid){
+      pos=children.indexOf(bgid)+1;
+    }
+    children.splice(pos,0,gid);//把新节点的ID插入到父节点中
+    await updateAVNodeByGidAsync(npNode._id,avnode=>{avnode.set("node._link.children",children)})//插入父节点
+    return await read_node(gid);
+  })();  
+}
 
-//     await(db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {}));//改变gid的父节点为新父节点
-//     var pos=0;
-//     var children=npNode._link.children;
-//     if(bgid){
-//       pos=children.indexOf(bgid)+1;
-//     }
-//     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
-//     await(db.updateAsync({_id:npNode._id}, npNode, {}));//插入父节点
-//     return await(read_node(gid));
-//   })();  
-// }
+//把gid节点移动为pgid的子节点
+//包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
+//移动前需要做检查。祖先节点不能移动为后辈的子节点
+function move_as_son(gid, pgid) {
+  return (async ()=>{
+    var npAVNode=await findAVNodeByGidAsync(pgid); //找到新父节点
+    return _move_as_son(gid,npAVNode);
+  })();  
+}
 
-// //把gid节点移动为pgid的子节点
-// //包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
-// //移动前需要做检查。祖先节点不能移动为后辈的子节点
-// function move_as_son(gid, pgid) {
-//   return async(function(){
-//     var npNode=await(db.findOneAsync({"_id":pgid}));//找到新父节点
-//     return _move_as_son(gid,npNode);
-//   })();  
-// }
-
-// function move_as_brother(gid, bgid) {
-//   return async(function(){
-//     var npNode=await(db.findOneAsync({"_link.children":{$elemMatch:bgid}}));//找到新父节点
-//     return _move_as_son(gid,npNode,bgid);
-//   })(); 
-// }
+function move_as_brother(gid, bgid) {
+  return (async ()=>{
+    var npAVNode=await findParentAVNodeAsync(bgid);//找到新父节点
+    return _move_as_son(gid,npAVNode,bgid);
+  })(); 
+}
