@@ -285,12 +285,12 @@ function _move_as_son(gid, npAVNode,bgid){
     var pos=0;
     var npNode=t(npAVNode);
     var children=npNode._link.children;
-    console.log('before',children)
+    // console.log('before',children)
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
-    console.log('after',children,npNode)
+    // console.log('after',children,npNode)
     await updateAVNodeByGidAsync(npNode._id,avnode=>{avnode.set("node._link.children",children)})//插入父节点
     return await read_node(gid);
   })();  
