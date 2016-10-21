@@ -27,9 +27,18 @@ describe('tree', function(){
   //   })()
   // })
 
-    it('should mk_son_by_data ', function(done){
+  // it('should mk_son_by_data ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_data('0','hello'));
+  //       assert.equal(typeof son,'object');
+  //       console.log(son)
+  //       done();
+  //   })()
+  // });
+  // 
+    it('should mk_son_by_name ', function(done){
       async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
+        var son= await(tree.mk_son_by_name('0','hello'));
         assert.equal(typeof son,'object');
         console.log(son)
         done();
@@ -54,13 +63,13 @@ describe('tree', function(){
   //   })()
   // });
 
-  it('should update_data ', function(done){
-      async(function(){
-        var n= await(tree.update_data('0','hello'));
-        console.log('n',n);
-        done();
-    })()
-  });
+  // it('should update_data ', function(done){
+  //     async(function(){
+  //       var n= await(tree.update_data('0','xxx'));
+  //       console.log('n',n);
+  //       done();
+  //   })()
+  // });
 
 
   // it('should remove ', function(done){

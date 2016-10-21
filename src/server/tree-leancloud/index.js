@@ -7,7 +7,7 @@ function tree_leancloud(cb){
     read_node,
     read_nodes,
     mk_son_by_data,
-    // mk_son_by_name,
+    mk_son_by_name,
     mk_brother_by_data,
     update_data,
     remove,
