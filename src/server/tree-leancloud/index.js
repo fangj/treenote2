@@ -1,3 +1,4 @@
+const _=require('lodash');
 var APP_ID = 'O5chE5oCrD64pIEimweTTno5-gzGzoHsz';
 var APP_KEY = 'PmdSTHdJk2Iy887QWH0yxBPx';
 const AV=require('leancloud-storage');
@@ -18,7 +19,7 @@ const findAVNodeByGidAsync= async (gid)=>{
       console.error(e);//找不到时会抛出错误
     }
   }else{
-    avnode=query.get(gid)//普通节点的id就是ObjectID
+    avnode=await query.get(gid)//普通节点的id就是ObjectID
     if(avnode && avnode.get('_rm')){//rm表示节点已经删除
       return null;
     }
@@ -31,7 +32,7 @@ const findNodeByGidAsync= async (gid)=>{
   return t(avnode);
 }
 
-const updateNodeByGidAsync=async (gid,node)=>{
+const updateNodeByGidAsync=async (gid,updater)=>{
   var avnode;
   if(gid==='0'){
     avnode = await findAVNodeByGidAsync(gid);
@@ -40,10 +41,18 @@ const updateNodeByGidAsync=async (gid,node)=>{
     avnode = AV.Object.createWithoutData('Node', gid);
   }
   // 修改属性
-  avnode.set('node', node);
+  updater(avnode);
   // 保存到云端
   var updatedNode= await avnode.save();
-  return t(updatedNode);
+  return updatedNode;
+}
+
+const _createWithoutData=_.curry(AV.Object.createWithoutData);
+const createNodeWithoutData=_createWithoutData('Node');//fn(id)
+const updateNodesByGidsAsync=(gids,updater)=>{
+  const nodes=gids.map(createNodeWithoutData);
+  nodes.map(updater);
+  return AV.Object.saveAll(nodes);
 }
 
 const insertNode=async (node)=>{
@@ -77,7 +86,7 @@ function tree_leancloud(cb){
     // mk_son_by_name,
     mk_brother_by_data,
     // update_data,
-    // remove,
+    remove,
     // move_as_son,
     // move_as_brother,
     //for test
@@ -143,7 +152,7 @@ function _mk_son_by_data(pNode,data,bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,newNode._id);//把新节点的ID插入到父节点中
-    await updateNodeByGidAsync(pNode._id,pNode);
+    await updateNodeByGidAsync(pNode._id,(avnode)=>{avnode.set('node._link.children',children)});
     return newNode;//返回新节点
   })();
 }
@@ -230,36 +239,37 @@ function mk_brother_by_data(bgid,data) {
 // }
 
 
-// //递归遍历所有子节点
-// //gids是要访问的节点id的列表
-// //visit是一个函数。访问节点的动作。
-// function _traversal_all_children(gids,visit) {
-//   if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
-//   return Promise.all(gids.map(gid => {
-//     return read_node(gid).then(node=>{ //读取当前节点
-//       return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
-//         return visit(node); //然后访问当前节点
-//       })
-//     })
-//   }));
-// }
+//递归遍历所有子节点
+//gids是要访问的节点id的列表
+//visit是一个函数。访问节点的动作。
+function _traversal_all_children(gids,visit) {
+  if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
+  return Promise.all(gids.map(gid => {
+    return read_node(gid).then(node=>{ //读取当前节点
+      return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
+        return visit(node); //然后访问当前节点
+      })
+    })
+  }));
+}
 
 // //标记删除节点与所有子孙节点
-// function remove(gid) {
-//   return async(function(){
-//      if(gid=='0')return;//根节点不能删除。
-//      var node=await(read_node(gid)); //先读取要删除的节点
-//      if(!node)return;//已经不存在，返回
-//      //收集所有子节点
-//      var gidsforRemove=[];
-//      const rm=(node)=>{gidsforRemove.push(node._id)};
-//      await(_traversal_all_children([gid],rm));
-//      //批量删除
-//      await(db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {}));//标记为删除
-//      await(db.updateAsync({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
-//      return gidsforRemove;
-//   })();
-// }
+function remove(gid) {
+  return (async ()=>{
+     if(gid=='0')return;//根节点不能删除。
+     var node=await read_node(gid); //先读取要删除的节点
+     if(!node)return;//已经不存在，返回
+     //收集所有子节点
+     var gidsforRemove=[];
+     const rm=(node)=>{gidsforRemove.push(node._id)};
+     await _traversal_all_children([gid],rm);
+     //批量删除//标记为删除
+     const setRm=(avnode)=>{avnode.set("_rm",true);}
+     await updateNodesByGidsAsync(gidsforRemove,setRm);
+     await updateNodeByGidAsync(node._link.p,(avnode)=>{avnode.remove("node._link.children",gid)})
+     return gidsforRemove;
+  })();
+}
 
 // function _isAncestor(pgid,gid){
 //   if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
