@@ -50,26 +50,26 @@ describe('tree', function(){
   //   })()
   // })
 
-  // it('should mk_son_by_data ', function(done){
-  //     async(function(){
-  //       var son= await(tree.mk_son_by_data('0','hello'));
-  //       assert.equal(typeof son,'object');
-  //       console.log('son',son)
-  //       done();
-  //   })()
-  // });
+  it('should mk_son_by_data ', function(done){
+      async(function(){
+        var son= await(tree.mk_son_by_data('0','hello'));
+        assert.equal(typeof son,'object');
+        console.log('son',son)
+        done();
+    })()
+  });
   // 
-  //   it('should mk_son_by_name ', function(done){
-  //     async(function(){
-  //       var son= await(tree.mk_son_by_name('0','hello'));
-  //       assert.equal(typeof son,'object');
-  //       console.log(son)
-  //       var son2= await(tree.mk_son_by_name('0','hello'));
-  //       assert.equal(typeof son2,'object');
-  //       console.log(son2)
-  //       done();
-  //   })()
-  // });
+    it('should mk_son_by_name ', function(done){
+      async(function(){
+        var son= await(tree.mk_son_by_name('0','hello'));
+        assert.equal(typeof son,'object');
+        console.log(son)
+        var son2= await(tree.mk_son_by_name('0','hello'));
+        assert.equal(typeof son2,'object');
+        console.log(son2)
+        done();
+    })()
+  });
 
   // it('should mk_brother_by_data ', function(done){
   //     async(function(){
@@ -89,13 +89,13 @@ describe('tree', function(){
   //   })()
   // });
 
-  it('should update_data ', function(done){
-      async(function(){
-        var n= await(tree.update_data('0','xxx'));
-        console.log('n',n);
-        done();
-    })()
-  });
+  // it('should update_data ', function(done){
+  //     async(function(){
+  //       var n= await(tree.update_data('0','xxx'));
+  //       console.log('n',n);
+  //       done();
+  //   })()
+  // });
 
 
   // it('should remove ', function(done){

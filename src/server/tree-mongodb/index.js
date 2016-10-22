@@ -33,14 +33,21 @@ const _insertAsync=(node)=>{
     return node;
   })
 }
-//插入gid到children数组中，插入点在bgid之后，如果没有bgid，插入在第一个
-const _insertChildren=(children,gid,bgid)=>{
-    var pos=0;
+
+
+const _insertChildren=(pNode,gid,bgid)=>{
+  var pos=0;
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
-     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
-     return children;
+   return db.updateOne({_id:pNode._id}, {
+     $push: {
+        "_link.children": {
+           $each: [gid],
+           $position: pos
+        }
+     }
+   }); 
 }
 
 function buildRootIfNotExist(cb){
@@ -88,9 +95,8 @@ function _mk_son_by_kv(pNode,key,value,bgid){
     };
     _newNode[key]=value;
     var newNode= await _insertAsync(_newNode) ;//插入新节点
-    //得到插入新节点的children
-    var children=_insertChildren(pNode._link.children,newNode._id,bgid);
-    await db.updateOne({_id:pNode._id}, {$set: {"_link.children": children}});//插入父节点
+    //插入父节点
+    await _insertChildren(pNode,newNode._id,bgid);
     return newNode;//返回新节点
   })();
 }
