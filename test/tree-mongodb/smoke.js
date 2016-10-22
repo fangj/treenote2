@@ -1,8 +1,9 @@
 // require("babel-register");
 require("babel-polyfill");
-
 var assert = require("assert");
+
 var MongoClient = require('mongodb').MongoClient;
+var ObjectId = require('mongodb').ObjectId;
 
 // Connection URL
 var url = 'mongodb://localhost:10086/myproject';
@@ -22,9 +23,12 @@ describe('tree', function(){
       console.log("Connected successfully to server");
       db=_db;
       treeDb = db.collection('node');
-      treeDb.remove({}, { multi: true }, function (err, numRemoved) {
+      // treeDb.remove({}, { multi: true }, function (err, numRemoved) {
+      //   tree=require('../../lib/server/tree-mongodb')(treeDb,done);
+      // });
+
         tree=require('../../lib/server/tree-mongodb')(treeDb,done);
-      });
+
     });
   })
   after(function(){
@@ -36,6 +40,16 @@ describe('tree', function(){
     async(function(){
       var node=await(treeDb.findOne({_id:'0'})); //rm标记表示节点已经被删除
       console.log('root',node);
+      done();
+    })() 
+  })
+
+  it('should read id',function(done){
+    async(function(){
+      var node=await(tree.read_node("580afc8d024210465f16c172")); 
+      console.log('node with id',node);
+      var node2=await (treeDb.findOne({"_id": ObjectId("580afc8d024210465f16c172")}));
+      console.log("node2",node2)
       done();
     })() 
   })
@@ -55,6 +69,13 @@ describe('tree', function(){
   //       var son= await(tree.mk_son_by_data('0','hello'));
   //       assert.equal(typeof son,'object');
   //       console.log('son',son)
+  //       var gson= await(tree.mk_son_by_data(son._id.toString(),'hello'));
+  //       assert.equal(typeof gson,'object');
+  //       console.log('gson',gson)
+  //       console.log([son._id,gson._id])
+  //       var nodes=await(tree.read_nodes([son._id,gson._id]))
+  //       console.log('nodes',nodes)
+
   //       done();
   //   })()
   // });
@@ -110,21 +131,21 @@ describe('tree', function(){
   //   })()
   // });
 
-    it('should move as son ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
-        var gson1= await(tree.mk_son_by_data(son._id,'world'));
-        var gson2= await(tree.mk_son_by_data(son._id,'book'));
-        son=await(tree.read_node(son._id)); 
-        console.log('son,gson1,gson2',son,gson1,gson2)
-        await(tree.move_as_son(gson1._id,gson2._id));
-        son=await(tree.read_node(son._id)); 
-        gson1=await(tree.read_node(gson1._id)); 
-        gson2=await(tree.read_node(gson2._id)); 
-        console.log('son,gson1,gson2',son,gson1,gson2)
-        done();
-    })()
-  });
+  //   it('should move as son ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_data('0','hello'));
+  //       var gson1= await(tree.mk_son_by_data(son._id,'world'));
+  //       var gson2= await(tree.mk_son_by_data(son._id,'book'));
+  //       son=await(tree.read_node(son._id)); 
+  //       console.log('son,gson1,gson2',son,gson1,gson2)
+  //       await(tree.move_as_son(gson1._id,gson2._id));
+  //       son=await(tree.read_node(son._id)); 
+  //       gson1=await(tree.read_node(gson1._id)); 
+  //       gson2=await(tree.read_node(gson2._id)); 
+  //       console.log('son,gson1,gson2',son,gson1,gson2)
+  //       done();
+  //   })()
+  // });
   
   //   it('should read_nodes ', function(done){
   //     async(function(){

@@ -1,22 +1,23 @@
 // var async = require('asyncawait/async');
 // var await = require('asyncawait/await');
 // var Promise = require('bluebird');
-
+var ObjectId = require('mongodb').ObjectId;
+const id=(_id)=>(typeof _id==="object"?id:(_id==='0'?'0':ObjectId(_id)));
 var db; 
 function tree_mongodb(_db,cb){
   // db=Promise.promisifyAll(_db);
   db=_db;
   buildRootIfNotExist().then((typeof cb ==='function')?cb():null); //cb用于通知测试程序
   return {
-    read_node,
-    read_nodes,
-    mk_son_by_data,
-    mk_son_by_name,
-    mk_brother_by_data,
-    update_data,
-    remove,
-    move_as_son,
-    move_as_brother,
+    read_node:(gid)=>read_node(id(gid)),
+    read_nodes:(gids)=>read_nodes(gids.map(id)),
+    mk_son_by_data:(pgid,data)=>mk_son_by_data(id(pgid),data),
+    mk_son_by_name:(pgid, name)=>mk_son_by_name(id(pgid),name),
+    mk_brother_by_data:(bgid,data)=>mk_brother_by_data(id(bgid),data),
+    update_data:(gid, data)=>update_data(id(gid),data),
+    remove:(gid)=>remove(id(gid)),
+    move_as_son:(gid, pgid) =>move_as_son(id(gid), id(pgid)),
+    move_as_brother:(gid, bgid)=>move_as_brother(id(gid), id(bgid)),
     //for test
     buildRootIfNotExist
   }
@@ -72,10 +73,12 @@ function buildRootIfNotExist(cb){
 
 function read_node(gid) {
   //rm标记表示节点已经被删除
+  console.log("read_node",gid);
   return db.findOne({_id:gid, _rm: { $exists: false }});
 }
 
 function read_nodes(gids) {
+  console.log("read_nodes",gids);
   return db.find({_id:{$in:gids},_rm: { $exists: false }}).toArray();
 }
 
@@ -99,7 +102,7 @@ function _mk_son_by_kv(pNode,key,value,bgid){
 
 function mk_son_by_data(pgid, data) {
   return (async ()=>{
-    var pNode=await db.findOne({"_id":pgid});//找到父节点
+    var pNode=await read_node(pgid);//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
@@ -108,18 +111,48 @@ function mk_son_by_data(pgid, data) {
   })();
 }
 
+// function __mk_son_by_name(pgid, name) {
+//   return (async ()=>{
+//     console.log("mk_son_by_name",pgid,name)
+//     var pNode=await  read_node(pgid) ;//找到父节点
+//     if(!pNode){
+//       throw ('cannot find parent node '+pgid);
+//       return null;//父节点不存在，无法插入，返回null
+//     }
+//     var node=await db.findOne({"_name":name,"_link.p":pgid});//是否已有同名节点
+//     if(node){
+//       return node;//如有直接返回
+//     }
+//     return _mk_son_by_kv(pNode,"_name",name);
+//   })();
+// }
+
 function mk_son_by_name(pgid, name) {
   return (async ()=>{
-    var pNode=await db.findOne({"_id":pgid}) ;//找到父节点
+    console.log("mk_son_by_name",pgid,name)
+    var pNode=await  read_node(pgid) ;//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    var node=await db.findOne({"_name":name,"_link.p":pgid});//是否已有同名节点
-    if(node){
-      return node;//如有直接返回
+    var _newNode={
+        _link: {
+          p: pNode._id,
+          children: []
+        },
+        _name:name
+    };
+    const node=await db.findAndModify({"_name":name,"_link.p":pgid},
+    [['_name','asc']],
+    { "$setOnInsert": _newNode },
+    {new: true, upsert: true});
+    // console.log(node)
+    const newNode=node.value;
+    //如果是新增的节点插入父节点
+    if(!node.lastErrorObject.updatedExisting){
+      await _insertChildrenAsync(pNode,newNode._id);
     }
-    return _mk_son_by_kv(pNode,"_name",name);
+    return newNode;
   })();
 }
 
@@ -135,19 +168,9 @@ function mk_brother_by_data(bgid,data) {
 }
 
 
-// function _update(db,query,update,callback){ 
-//     var cb=function(err, numAffected, affectedDocuments, upsert){
-//       callback(err,affectedDocuments);//修改callback的签名，使得第二个参数为更新过的doc
-//     };
-//     var options={ multi: false,returnUpdatedDocs:true };
-//     db.update(query, update, options,cb);
-// }
-
-// const update=Promise.promisify(_update);//修改callback签名后就可以promisify
-
 function update_data(gid, data) {
   return db.updateOne({_id:gid}, { $set: { _data: data } })
-  .then(_=>db.findOne({_id:gid}));
+  .then(read_node(gid));
 }
 
 
@@ -155,9 +178,11 @@ function update_data(gid, data) {
 //gids是要访问的节点id的列表
 //visit是一个函数。访问节点的动作。
 function _traversal_all_children(gids,visit) {
+  console.log("_traversal_all_children",gids);
   if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
   return Promise.all(gids.map(gid => {
     return read_node(gid).then(node=>{ //读取当前节点
+      console.log(node,node._link.children)
       return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
         return visit(node); //然后访问当前节点
       })

@@ -1,3 +1,5 @@
+require("babel-polyfill");
+
 var path=require('path');
 var express = require('express');
 var expressRestResource = require('express-rest-resource');
@@ -15,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 var tree=require('treenote2/lib/server/middleware/tree.js');
 
+var assert = require("assert");
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost:10086/myproject';
 MongoClient.connect(url, function(err, db) {
