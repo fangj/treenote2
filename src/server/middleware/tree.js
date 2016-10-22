@@ -7,8 +7,14 @@ var logger = require('log4js').getLogger('server');
 logger.setLevel('DEBUG'); //程序完成后注释掉。可以切换回默认等级，减少log
 
 function factory(config) {
-
-  var tree = require('../tree-nedb')(config.nedb);
+  var tree;
+  if(config.mongodb){
+    tree = require('../tree-mongodb')(config.mongodb);
+  }else if(config.nedb){
+    tree = require('../tree-nedb')(config.nedb);
+  }else if(config.leancloud){
+    tree = require('../tree-leancloud')(config.leancloud);
+  }
 
   router.post('/nodes', 
     function(req, res, next) {
