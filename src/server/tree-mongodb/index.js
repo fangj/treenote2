@@ -16,7 +16,7 @@ function tree_mongodb(_db,cb){
     mk_son_by_data,
     mk_son_by_name,
     mk_brother_by_data,
-    // update_data,
+    update_data,
     // remove,
     // move_as_son,
     // move_as_brother,
@@ -143,12 +143,10 @@ function mk_brother_by_data(bgid,data) {
 
 // const update=Promise.promisify(_update);//修改callback签名后就可以promisify
 
-// function update_data(gid, data) {
-//   return (async ()=>{
-//     var node=await update(db,{_id:gid}, { $set: { _data: data } });//更新节点并返回更新后的节点
-//     return node;
-//   })();
-// }
+function update_data(gid, data) {
+  return db.updateOne({_id:gid}, { $set: { _data: data } })
+  .then(_=>db.findOne({_id:gid}));
+}
 
 
 // //递归遍历所有子节点
