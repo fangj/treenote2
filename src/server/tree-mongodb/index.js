@@ -39,7 +39,6 @@ const _insertChildrenAsync=(pNode,gid,bgid)=>{
     if(bgid){
       pos=_.findIndex(pNode._link.children, o=> bgid.equals(o));
     }
-    console.log("_insertChildrenAsync,pNode,gid,bgid,pos",pNode,gid,bgid,pos)
    return db.updateOne({_id:pNode._id}, {
      $push: {
         "_link.children": {
@@ -225,7 +224,6 @@ function _isAncestor(pgid,gid){
 }
 
 function _move_as_son(gid, npNode,bgid){
-  console.log("_move_as_son gid, npNode,bgid",gid, npNode,bgid)
   return (async ()=>{
     var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npNode._id);
     if(gidIsAncestorOfNewParentNode){
@@ -250,7 +248,6 @@ function _move_as_son(gid, npNode,bgid){
 // //包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
 // //移动前需要做检查。祖先节点不能移动为后辈的子节点
 function move_as_son(gid, pgid) {
-  console.log("move_as_son,gid, pgid",gid,pgid)
   return (async ()=>{
     var npNode=await read_node(pgid);//找到新父节点
     return _move_as_son(gid,npNode);
@@ -258,7 +255,6 @@ function move_as_son(gid, pgid) {
 }
 
 function move_as_brother(gid, bgid) {
-  console.log("move_as_brother,gid, pgid",gid,bgid)
   return (async ()=>{
     var npNode=await findParentAsync(bgid);//找到新父节点
     if(!npNode){
