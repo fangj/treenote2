@@ -16,7 +16,7 @@ function tree_mongodb(_db,cb){
     update_data,
     remove,
     move_as_son,
-    // move_as_brother,
+    move_as_brother,
     //for test
     buildRootIfNotExist
   }
@@ -47,7 +47,7 @@ const _insertChildrenAsync=(pNode,gid,bgid)=>{
    }); 
 }
 
-const findParentAsync=(sgid)=> db.findOne({"_link.children":sgid});
+const findParentAsync=(sgid)=> db.findOne({"_link.children":sgid,_rm: { $exists: false }});
 
 function buildRootIfNotExist(cb){
   // console.log("buildRootIfNotExist");
@@ -202,6 +202,10 @@ function _move_as_son(gid, npNode,bgid){
       return null;//要移动的节点不能是目标父节点的长辈节点
     }
     var pNode=await findParentAsync(gid);//找到原父节点
+    if(!pNode){
+      throw ('cannot find parent node of brother '+bgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
     await db.updateOne({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
     if(npNode._id!==pNode._id){
       await db.updateOne({_id:gid},  { $set: { "_link.p": npNode._id } }, {});//改变gid的父节点为新父节点
@@ -224,6 +228,10 @@ function move_as_son(gid, pgid) {
 function move_as_brother(gid, bgid) {
   return (async ()=>{
     var npNode=await findParentAsync(bgid);//找到新父节点
+    if(!npNode){
+      throw ('cannot find parent node of brother '+bgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
     return _move_as_son(gid,npNode,bgid);
   })(); 
 }
