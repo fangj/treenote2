@@ -1,5 +1,7 @@
+// require("babel-register");
+require("babel-polyfill");
+
 var assert = require("assert");
-var nedb = require('nedb');
 var MongoClient = require('mongodb').MongoClient;
 
 // Connection URL
@@ -21,7 +23,7 @@ describe('tree', function(){
       db=_db;
       treeDb = db.collection('node');
       treeDb.remove({}, { multi: true }, function (err, numRemoved) {
-        tree=require('../../src/server/tree-mongodb')(treeDb,done);
+        tree=require('../../lib/server/tree-mongodb')(treeDb,done);
       });
     });
   })
@@ -32,7 +34,7 @@ describe('tree', function(){
 
   it('should read root',function(done){
     async(function(){
-      var node=await(treeDb.findOneAsync({_id:'0'})); //rm标记表示节点已经被删除
+      var node=await(treeDb.findOne({_id:'0'})); //rm标记表示节点已经被删除
       console.log('root',node);
       done();
     })() 

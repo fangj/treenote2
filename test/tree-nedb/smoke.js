@@ -1,3 +1,5 @@
+require("babel-polyfill");
+
 var assert = require("assert");
 var nedb = require('nedb');
 var treeDb = new nedb({ filename: 'tree.nedb', autoload: true });
@@ -11,7 +13,7 @@ describe('tree', function(){
 
   before(function(done){
     treeDb.remove({}, { multi: true }, function (err, numRemoved) {
-      tree=require('../../src/server/tree-nedb')(treeDb,done);
+      tree=require('../../lib/server/tree-nedb')(treeDb,done);
     });
   })
 

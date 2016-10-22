@@ -1,5 +1,5 @@
-var async = require('asyncawait/async');
-var await = require('asyncawait/await');
+// var async = require('asyncawait/async');
+// var await = require('asyncawait/await');
 var Promise = require('bluebird');
 
 
@@ -25,8 +25,8 @@ function tree_nedb(_db,cb){
 module.exports=tree_nedb;
 
 function buildRootIfNotExist(cb){
-  return async(function(){
-    var root=await(db.findOneAsync({_id:'0'}));
+  return (async ()=>{
+    var root=await db.findOneAsync({_id:'0'});
     if(!root){
       var defaultRoot={
         _id:'0', 
@@ -35,7 +35,7 @@ function buildRootIfNotExist(cb){
           children: []
         }
       };
-      root=await(db.insertAsync(defaultRoot));
+      root=await db.insertAsync(defaultRoot);
     }
     if(typeof cb =='function'){
       cb(); //通知root构建完成
@@ -45,22 +45,22 @@ function buildRootIfNotExist(cb){
 }
 
 function read_node(gid) {
-  return async(function(){
+  return (async ()=>{
     // console.log('read_node',gid);
-    var node=await(db.findOneAsync({_id:gid, _rm: { $exists: false }})); //rm标记表示节点已经被删除
+    var node=await db.findOneAsync({_id:gid, _rm: { $exists: false }}); //rm标记表示节点已经被删除
     return node;
   })();
 }
 
 function read_nodes(gids) {
-  return async(function(){
-    var nodes=await(db.findAsync({_id:{$in:gids},_rm: { $exists: false }}));
+  return (async ()=>{
+    var nodes=await db.findAsync({_id:{$in:gids},_rm: { $exists: false }});
     return nodes;
   })();
 }
 
 function _mk_son_by_data(pNode,data,bgid){
-  return async(function(){
+  return (async ()=>{
     // console.log(pNode);
     var newNode={
         _link: {
@@ -69,20 +69,20 @@ function _mk_son_by_data(pNode,data,bgid){
         },
         _data:data
     };
-    var _newNode= await(db.insertAsync(newNode));//插入新节点
+    var _newNode= await db.insertAsync(newNode) ;//插入新节点
     var pos=0;
     var children=pNode._link.children;
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
-    await(db.updateAsync({_id:pNode._id}, pNode, {}));//插入父节点
+    await db.updateAsync({_id:pNode._id}, pNode, {});//插入父节点
     return _newNode;//返回新节点
   })();
 }
 
 function _mk_son_by_name(pNode,name,bgid){
-  return async(function(){
+  return (async ()=>{
     // console.log(pNode);
     var newNode={
         _link: {
@@ -91,21 +91,21 @@ function _mk_son_by_name(pNode,name,bgid){
         },
         _name:name
     };
-    var _newNode= await(db.insertAsync(newNode));//插入新节点
+    var _newNode= await db.insertAsync(newNode);//插入新节点
     var pos=0;
     var children=pNode._link.children;
     if(bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
-    await(db.updateAsync({_id:pNode._id}, pNode, {}));//插入父节点
+    await db.updateAsync({_id:pNode._id}, pNode, {});//插入父节点
     return _newNode;//返回新节点
   })();
 }
 
 function mk_son_by_data(pgid, data) {
-  return async(function(){
-    var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
+  return (async ()=>{
+    var pNode=await db.findOneAsync({"_id":pgid});//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
@@ -115,13 +115,13 @@ function mk_son_by_data(pgid, data) {
 }
 
 function mk_son_by_name(pgid, name) {
-  return async(function(){
-    var pNode=await(db.findOneAsync({"_id":pgid}));//找到父节点
+  return (async ()=>{
+    var pNode=await db.findOneAsync({"_id":pgid}) ;//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    var node=await(db.findOneAsync({"_name":name}));//是否已有同名节点
+    var node=await db.findOneAsync({"_name":name});//是否已有同名节点
     if(node){
       return node;//如有直接返回
     }
@@ -130,8 +130,8 @@ function mk_son_by_name(pgid, name) {
 }
 
 function mk_brother_by_data(bgid,data) {
-  return async(function(){
-    var pNode=await(db.findOneAsync({"_link.children":{$elemMatch:bgid}}));//找到父节点
+  return (async ()=>{
+    var pNode=await db.findOneAsync({"_link.children":{$elemMatch:bgid}});//找到父节点
     if(!pNode){
       throw ('cannot find parent node of brother '+bgid);
       return null;//父节点不存在，无法插入，返回null
@@ -152,8 +152,8 @@ function _update(db,query,update,callback){
 const update=Promise.promisify(_update);//修改callback签名后就可以promisify
 
 function update_data(gid, data) {
-  return async(function(){
-    var node=await(update(db,{_id:gid}, { $set: { _data: data } }));//更新节点并返回更新后的节点
+  return (async ()=>{
+    var node=await update(db,{_id:gid}, { $set: { _data: data } });//更新节点并返回更新后的节点
     return node;
   })();
 }
@@ -175,17 +175,17 @@ function _traversal_all_children(gids,visit) {
 
 //标记删除节点与所有子孙节点
 function remove(gid) {
-  return async(function(){
+  return (async ()=>{
      if(gid=='0')return;//根节点不能删除。
-     var node=await(read_node(gid)); //先读取要删除的节点
+     var node=await read_node(gid); //先读取要删除的节点
      if(!node)return;//已经不存在，返回
      //收集所有子节点
      var gidsforRemove=[];
      const rm=(node)=>{gidsforRemove.push(node._id)};
-     await(_traversal_all_children([gid],rm));
+     await _traversal_all_children([gid],rm);
      //批量删除
-     await(db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {}));//标记为删除
-     await(db.updateAsync({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
+     await db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {});//标记为删除
+     await db.updateAsync({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
      return gidsforRemove;
   })();
 }
@@ -203,19 +203,19 @@ function _isAncestor(pgid,gid){
 }
 
 function _move_as_son(gid, npNode,bgid){
-  return async(function(){
-    var gidIsAncestorOfNewParentNode=await(_isAncestor(gid,npNode._id));
+  return (async ()=>{
+    var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npNode._id);
     if(gidIsAncestorOfNewParentNode){
       console.log(gid,'is ancestor of',npNode._id)
       return null;//要移动的节点不能是目标父节点的长辈节点
     }
-    var pNode=await(db.findOneAsync({"_link.children":{$elemMatch:gid}}));//找到原父节点
+    var pNode=await db.findOneAsync({"_link.children":{$elemMatch:gid}});//找到原父节点
 
-    await(db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) );//从原父节点删除
+    await db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
     if(npNode._id===pNode._id){//如果新的父节点与旧的父节点相同。要更新父节点
-      npNode=await(db.findOneAsync({_id:npNode._id, _rm: { $exists: false }})); 
+      npNode=await db.findOneAsync({_id:npNode._id, _rm: { $exists: false }}); 
     }else{
-      await(db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {}));//改变gid的父节点为新父节点
+      await db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {});//改变gid的父节点为新父节点
     }
     var pos=0;
     var children=npNode._link.children;
@@ -223,8 +223,8 @@ function _move_as_son(gid, npNode,bgid){
       pos=children.indexOf(bgid)+1;
     }
     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
-    await(db.updateAsync({_id:npNode._id}, npNode, {}));//插入父节点
-    return await(read_node(gid));
+    await db.updateAsync({_id:npNode._id}, npNode, {});//插入父节点
+    return await read_node(gid);
   })();  
 }
 
@@ -232,15 +232,15 @@ function _move_as_son(gid, npNode,bgid){
 //包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
 //移动前需要做检查。祖先节点不能移动为后辈的子节点
 function move_as_son(gid, pgid) {
-  return async(function(){
-    var npNode=await(db.findOneAsync({"_id":pgid}));//找到新父节点
+  return (async ()=>{
+    var npNode=await db.findOneAsync({"_id":pgid});//找到新父节点
     return _move_as_son(gid,npNode);
   })();  
 }
 
 function move_as_brother(gid, bgid) {
-  return async(function(){
-    var npNode=await(db.findOneAsync({"_link.children":{$elemMatch:bgid}}));//找到新父节点
+  return (async ()=>{
+    var npNode=await db.findOneAsync({"_link.children":{$elemMatch:bgid}});//找到新父节点
     return _move_as_son(gid,npNode,bgid);
   })(); 
 }

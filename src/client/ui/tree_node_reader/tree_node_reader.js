@@ -14,7 +14,7 @@ class Reader extends React.Component {
         path: PropTypes.string,//暂废除
         level:PropTypes.number, //展开的层次，0为不展开
         subscribe: PropTypes.array
-    }
+    };
 
 
     constructor(props) {
