@@ -12,7 +12,7 @@ function tree_mongodb(_db,cb){
   buildRootIfNotExist().then((typeof cb ==='function')?cb():null); //cb用于通知测试程序
   return {
     read_node,
-    // read_nodes,
+    read_nodes,
     mk_son_by_data,
     mk_son_by_name,
     mk_brother_by_data,
@@ -76,13 +76,10 @@ function read_node(gid) {
   return db.findOne({_id:gid, _rm: { $exists: false }});
 }
 
-// function read_nodes(gids) {
-//   return (async ()=>{
-//     var nodes=await db.findAsync({_id:{$in:gids},_rm: { $exists: false }});
-//     return nodes;
-//   })();
-// }
-// 
+function read_nodes(gids) {
+  return db.find({_id:{$in:gids},_rm: { $exists: false }}).toArray();
+}
+
 
 function _mk_son_by_kv(pNode,key,value,bgid){
   return (async ()=>{
