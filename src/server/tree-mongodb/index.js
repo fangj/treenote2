@@ -14,7 +14,7 @@ function tree_mongodb(_db,cb){
     // read_node,
     // read_nodes,
     mk_son_by_data,
-    // mk_son_by_name,
+    mk_son_by_name,
     // mk_brother_by_data,
     // update_data,
     // remove,
@@ -78,17 +78,18 @@ function buildRootIfNotExist(cb){
 //     return nodes;
 //   })();
 // }
+// 
 
-function _mk_son_by_data(pNode,data,bgid){
+function _mk_son_by_kv(pNode,key,value,bgid){
   return (async ()=>{
     // console.log(pNode);
     var _newNode={
         _link: {
           p: pNode._id,
           children: []
-        },
-        _data:data
+        }
     };
+    _newNode[key]=value;
     var newNode= await _insertAsync(_newNode) ;//插入新节点
     //得到插入新节点的children
     var children=_insertChildren(pNode._link.children,newNode._id,bgid);
@@ -97,27 +98,14 @@ function _mk_son_by_data(pNode,data,bgid){
   })();
 }
 
-// function _mk_son_by_name(pNode,name,bgid){
-//   return (async ()=>{
-//     // console.log(pNode);
-//     var newNode={
-//         _link: {
-//           p: pNode._id,
-//           children: []
-//         },
-//         _name:name
-//     };
-//     var _newNode= await db.insertAsync(newNode);//插入新节点
-//     var pos=0;
-//     var children=pNode._link.children;
-//     if(bgid){
-//       pos=children.indexOf(bgid)+1;
-//     }
-//     children.splice(pos,0,_newNode._id);//把新节点的ID插入到父节点中
-//     await db.updateAsync({_id:pNode._id}, pNode, {});//插入父节点
-//     return _newNode;//返回新节点
-//   })();
-// }
+function _mk_son_by_data(pNode,data,bgid){
+  return _mk_son_by_kv(pNode,"_data",data,bgid);
+}
+
+function _mk_son_by_name(pNode,name,bgid){
+  return _mk_son_by_kv(pNode,"_name",name,bgid);
+}
+
 
 function mk_son_by_data(pgid, data) {
   return (async ()=>{
@@ -130,20 +118,20 @@ function mk_son_by_data(pgid, data) {
   })();
 }
 
-// function mk_son_by_name(pgid, name) {
-//   return (async ()=>{
-//     var pNode=await db.findOne({"_id":pgid}) ;//找到父节点
-//     if(!pNode){
-//       throw ('cannot find parent node '+pgid);
-//       return null;//父节点不存在，无法插入，返回null
-//     }
-//     var node=await db.findOne({"_name":name});//是否已有同名节点
-//     if(node){
-//       return node;//如有直接返回
-//     }
-//     return _mk_son_by_name(pNode,name);
-//   })();
-// }
+function mk_son_by_name(pgid, name) {
+  return (async ()=>{
+    var pNode=await db.findOne({"_id":pgid}) ;//找到父节点
+    if(!pNode){
+      throw ('cannot find parent node '+pgid);
+      return null;//父节点不存在，无法插入，返回null
+    }
+    var node=await db.findOne({"_name":name});//是否已有同名节点
+    if(node){
+      return node;//如有直接返回
+    }
+    return _mk_son_by_name(pNode,name);
+  })();
+}
 
 // function mk_brother_by_data(bgid,data) {
 //   return (async ()=>{

@@ -50,23 +50,23 @@ describe('tree', function(){
   //   })()
   // })
 
-  it('should mk_son_by_data ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
-        assert.equal(typeof son,'object');
-        console.log('son',son)
-        done();
-    })()
-  });
-  // 
-  //   it('should mk_son_by_name ', function(done){
+  // it('should mk_son_by_data ', function(done){
   //     async(function(){
-  //       var son= await(tree.mk_son_by_name('0','hello'));
+  //       var son= await(tree.mk_son_by_data('0','hello'));
   //       assert.equal(typeof son,'object');
-  //       console.log(son)
+  //       console.log('son',son)
   //       done();
   //   })()
   // });
+  // 
+    it('should mk_son_by_name ', function(done){
+      async(function(){
+        var son= await(tree.mk_son_by_name('0','hello'));
+        assert.equal(typeof son,'object');
+        console.log(son)
+        done();
+    })()
+  });
 
   // it('should mk_brother_by_data ', function(done){
   //     async(function(){
