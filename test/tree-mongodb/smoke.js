@@ -50,26 +50,26 @@ describe('tree', function(){
   //   })()
   // })
 
-  it('should mk_son_by_data ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_data('0','hello'));
-        assert.equal(typeof son,'object');
-        console.log('son',son)
-        done();
-    })()
-  });
+  // it('should mk_son_by_data ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_data('0','hello'));
+  //       assert.equal(typeof son,'object');
+  //       console.log('son',son)
+  //       done();
+  //   })()
+  // });
   
-    it('should mk_son_by_name ', function(done){
-      async(function(){
-        var son= await(tree.mk_son_by_name('0','hello'));
-        assert.equal(typeof son,'object');
-        console.log(son)
-        var son2= await(tree.mk_son_by_name('0','hello'));
-        assert.equal(typeof son2,'object');
-        console.log(son2)
-        done();
-    })()
-  });
+  //   it('should mk_son_by_name ', function(done){
+  //     async(function(){
+  //       var son= await(tree.mk_son_by_name('0','hello'));
+  //       assert.equal(typeof son,'object');
+  //       console.log(son)
+  //       var son2= await(tree.mk_son_by_name('0','hello'));
+  //       assert.equal(typeof son2,'object');
+  //       console.log(son2)
+  //       done();
+  //   })()
+  // });
 
   // it('should mk_brother_by_data ', function(done){
   //     async(function(){
@@ -110,29 +110,29 @@ describe('tree', function(){
   //   })()
   // });
 
-  //   it('should move as son ', function(done){
-  //     async(function(){
-  //       var son= await(tree.mk_son_by_data('0','hello'));
-  //       var gson1= await(tree.mk_son_by_data(son._id,'world'));
-  //       var gson2= await(tree.mk_son_by_data(son._id,'book'));
-  //       son=await(tree.read_node(son._id)); 
-  //       console.log('son,gson1,gson2',son,gson1,gson2)
-  //       await(tree.move_as_son(gson1._id,gson2._id));
-  //       son=await(tree.read_node(son._id)); 
-  //       gson1=await(tree.read_node(gson1._id)); 
-  //       gson2=await(tree.read_node(gson2._id)); 
-  //       console.log('son,gson1,gson2',son,gson1,gson2)
-  //       done();
-  //   })()
-  // });
-  
-    it('should read_nodes ', function(done){
+    it('should move as son ', function(done){
       async(function(){
-        var n= await(tree.read_node('0'));
-        var nodes=await(tree.read_nodes(n._link.children));
-        console.log(nodes)
+        var son= await(tree.mk_son_by_data('0','hello'));
+        var gson1= await(tree.mk_son_by_data(son._id,'world'));
+        var gson2= await(tree.mk_son_by_data(son._id,'book'));
+        son=await(tree.read_node(son._id)); 
+        console.log('son,gson1,gson2',son,gson1,gson2)
+        await(tree.move_as_son(gson1._id,gson2._id));
+        son=await(tree.read_node(son._id)); 
+        gson1=await(tree.read_node(gson1._id)); 
+        gson2=await(tree.read_node(gson2._id)); 
+        console.log('son,gson1,gson2',son,gson1,gson2)
         done();
     })()
   });
+  
+  //   it('should read_nodes ', function(done){
+  //     async(function(){
+  //       var n= await(tree.read_node('0'));
+  //       var nodes=await(tree.read_nodes(n._link.children));
+  //       console.log(nodes)
+  //       done();
+  //   })()
+  // });
 
 });

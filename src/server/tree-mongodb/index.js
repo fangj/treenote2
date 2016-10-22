@@ -1,9 +1,6 @@
 // var async = require('asyncawait/async');
 // var await = require('asyncawait/await');
 // var Promise = require('bluebird');
-var R=require('ramda');
-
-const result=R.prop('result');
 
 var db; 
 function tree_mongodb(_db,cb){
@@ -18,7 +15,7 @@ function tree_mongodb(_db,cb){
     mk_brother_by_data,
     update_data,
     remove,
-    // move_as_son,
+    move_as_son,
     // move_as_brother,
     //for test
     buildRootIfNotExist
@@ -35,7 +32,7 @@ const _insertAsync=(node)=>{
 }
 
 
-const _insertChildren=(pNode,gid,bgid)=>{
+const _insertChildrenAsync=(pNode,gid,bgid)=>{
   var pos=0;
     if(bgid){
       pos=pNode._link.children.indexOf(bgid)+1;
@@ -49,6 +46,8 @@ const _insertChildren=(pNode,gid,bgid)=>{
      }
    }); 
 }
+
+const findParentAsync=(sgid)=> db.findOne({"_link.children":sgid});
 
 function buildRootIfNotExist(cb){
   // console.log("buildRootIfNotExist");
@@ -93,7 +92,7 @@ function _mk_son_by_kv(pNode,key,value,bgid){
     _newNode[key]=value;
     var newNode= await _insertAsync(_newNode) ;//插入新节点
     //插入父节点
-    await _insertChildren(pNode,newNode._id,bgid);
+    await _insertChildrenAsync(pNode,newNode._id,bgid);
     return newNode;//返回新节点
   })();
 }
@@ -126,7 +125,7 @@ function mk_son_by_name(pgid, name) {
 
 function mk_brother_by_data(bgid,data) {
   return (async ()=>{
-    var pNode=await db.findOne({"_link.children":bgid});//找到父节点
+    var pNode=await findParentAsync(bgid);//找到父节点
     if(!pNode){
       throw ('cannot find parent node of brother '+bgid);
       return null;//父节点不存在，无法插入，返回null
@@ -183,57 +182,48 @@ function remove(gid) {
   })();
 }
 
-// function _isAncestor(pgid,gid){
-//   if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
-//   return read_node(gid).then(node=>{
-//     // console.log('check',pgid,node._link.p,node)
-//     if(node._link.p===pgid){
-//       return true;
-//     }else{
-//       return _isAncestor(pgid,node._link.p);
-//     }
-//   })
-// }
+function _isAncestor(pgid,gid){
+  if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
+  return read_node(gid).then(node=>{
+    // console.log('check',pgid,node._link.p,node)
+    if(node._link.p===pgid){
+      return true;
+    }else{
+      return _isAncestor(pgid,node._link.p);
+    }
+  })
+}
 
-// function _move_as_son(gid, npNode,bgid){
-//   return (async ()=>{
-//     var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npNode._id);
-//     if(gidIsAncestorOfNewParentNode){
-//       console.log(gid,'is ancestor of',npNode._id)
-//       return null;//要移动的节点不能是目标父节点的长辈节点
-//     }
-//     var pNode=await db.findOne({"_link.children":{$elemMatch:gid}});//找到原父节点
-
-//     await db.updateAsync({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
-//     if(npNode._id===pNode._id){//如果新的父节点与旧的父节点相同。要更新父节点
-//       npNode=await db.findOne({_id:npNode._id, _rm: { $exists: false }}); 
-//     }else{
-//       await db.updateAsync({_id:gid},  { $set: { "_link.p": npNode._id } }, {});//改变gid的父节点为新父节点
-//     }
-//     var pos=0;
-//     var children=npNode._link.children;
-//     if(bgid){
-//       pos=children.indexOf(bgid)+1;
-//     }
-//     children.splice(pos,0,gid);//把新节点的ID插入到父节点中
-//     await db.updateAsync({_id:npNode._id}, npNode, {});//插入父节点
-    // return await read_node(gid);
-//   })();  
-// }
+function _move_as_son(gid, npNode,bgid){
+  return (async ()=>{
+    var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npNode._id);
+    if(gidIsAncestorOfNewParentNode){
+      throw (gid+'is ancestor of'+npNode._id);
+      return null;//要移动的节点不能是目标父节点的长辈节点
+    }
+    var pNode=await findParentAsync(gid);//找到原父节点
+    await db.updateOne({_id:pNode._id},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
+    if(npNode._id!==pNode._id){
+      await db.updateOne({_id:gid},  { $set: { "_link.p": npNode._id } }, {});//改变gid的父节点为新父节点
+    }
+    await _insertChildrenAsync(npNode,gid,bgid);
+    return await read_node(gid);
+  })();  
+}
 
 // //把gid节点移动为pgid的子节点
 // //包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
 // //移动前需要做检查。祖先节点不能移动为后辈的子节点
-// function move_as_son(gid, pgid) {
-//   return (async ()=>{
-//     var npNode=await db.findOne({"_id":pgid});//找到新父节点
-//     return _move_as_son(gid,npNode);
-//   })();  
-// }
+function move_as_son(gid, pgid) {
+  return (async ()=>{
+    var npNode=await read_node(pgid);//找到新父节点
+    return _move_as_son(gid,npNode);
+  })();  
+}
 
-// function move_as_brother(gid, bgid) {
-//   return (async ()=>{
-//     var npNode=await db.findOne({"_link.children":{$elemMatch:bgid}});//找到新父节点
-//     return _move_as_son(gid,npNode,bgid);
-//   })(); 
-// }
+function move_as_brother(gid, bgid) {
+  return (async ()=>{
+    var npNode=await findParentAsync(bgid);//找到新父节点
+    return _move_as_son(gid,npNode,bgid);
+  })(); 
+}
