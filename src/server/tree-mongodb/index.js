@@ -17,7 +17,7 @@ function tree_mongodb(_db,cb){
     mk_son_by_name,
     mk_brother_by_data,
     update_data,
-    // remove,
+    remove,
     // move_as_son,
     // move_as_brother,
     //for test
@@ -38,7 +38,7 @@ const _insertAsync=(node)=>{
 const _insertChildren=(pNode,gid,bgid)=>{
   var pos=0;
     if(bgid){
-      pos=children.indexOf(bgid)+1;
+      pos=pNode._link.children.indexOf(bgid)+1;
     }
    return db.updateOne({_id:pNode._id}, {
      $push: {
@@ -155,36 +155,36 @@ function update_data(gid, data) {
 }
 
 
-// //递归遍历所有子节点
-// //gids是要访问的节点id的列表
-// //visit是一个函数。访问节点的动作。
-// function _traversal_all_children(gids,visit) {
-//   if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
-//   return Promise.all(gids.map(gid => {
-//     return read_node(gid).then(node=>{ //读取当前节点
-//       return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
-//         return visit(node); //然后访问当前节点
-//       })
-//     })
-//   }));
-// }
+//递归遍历所有子节点
+//gids是要访问的节点id的列表
+//visit是一个函数。访问节点的动作。
+function _traversal_all_children(gids,visit) {
+  if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
+  return Promise.all(gids.map(gid => {
+    return read_node(gid).then(node=>{ //读取当前节点
+      return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
+        return visit(node); //然后访问当前节点
+      })
+    })
+  }));
+}
 
-// //标记删除节点与所有子孙节点
-// function remove(gid) {
-//   return (async ()=>{
-//      if(gid=='0')return;//根节点不能删除。
-//      var node=await read_node(gid); //先读取要删除的节点
-//      if(!node)return;//已经不存在，返回
-//      //收集所有子节点
-//      var gidsforRemove=[];
-//      const rm=(node)=>{gidsforRemove.push(node._id)};
-//      await _traversal_all_children([gid],rm);
-//      //批量删除
-//      await db.updateAsync({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {});//标记为删除
-//      await db.updateAsync({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
-//      return gidsforRemove;
-//   })();
-// }
+//标记删除节点与所有子孙节点
+function remove(gid) {
+  return (async ()=>{
+     if(gid==='0')return;//根节点不能删除。
+     var node=await read_node(gid); //先读取要删除的节点
+     if(!node)return;//已经不存在，返回
+     //收集所有子节点
+     var gidsforRemove=[];
+     const rm=(node)=>{gidsforRemove.push(node._id)};
+     await _traversal_all_children([gid],rm);
+     //批量删除
+     await db.updateMany({_id:{$in:gidsforRemove}},  { $set: { _rm:true  } }, {});//标记为删除
+     await db.updateOne({_id:node._link.p},  { $pull: { "_link.children": gid } } , {}) ;//从原父节点删除
+     return gidsforRemove;
+  })();
+}
 
 // function _isAncestor(pgid,gid){
 //   if(gid=='0')return Promise.resolve(false); //'0'为根节点。任何节点都不是'0'的父节点
