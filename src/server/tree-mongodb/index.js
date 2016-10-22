@@ -1,6 +1,7 @@
 // var async = require('asyncawait/async');
 // var await = require('asyncawait/await');
 // var Promise = require('bluebird');
+var _=require('lodash');
 var ObjectId = require('mongodb').ObjectId;
 const id=(_id)=>(typeof _id==="object"?id:(_id==='0'?'0':ObjectId(_id)));
 var db; 
@@ -34,10 +35,11 @@ const _insertAsync=(node)=>{
 
 
 const _insertChildrenAsync=(pNode,gid,bgid)=>{
-  var pos=0;
+    var pos=0;
     if(bgid){
-      pos=pNode._link.children.indexOf(bgid)+1;
+      pos=_.findIndex(pNode._link.children, o=> bgid.equals(o));
     }
+    console.log("_insertChildrenAsync,pNode,gid,bgid,pos",pNode,gid,bgid,pos)
    return db.updateOne({_id:pNode._id}, {
      $push: {
         "_link.children": {
@@ -73,12 +75,12 @@ function buildRootIfNotExist(cb){
 
 function read_node(gid) {
   //rm标记表示节点已经被删除
-  console.log("read_node",gid);
+  // console.log("read_node",gid);
   return db.findOne({_id:gid, _rm: { $exists: false }});
 }
 
 function read_nodes(gids) {
-  console.log("read_nodes",gids);
+  // console.log("read_nodes",gids);
   return db.find({_id:{$in:gids},_rm: { $exists: false }}).toArray();
 }
 
@@ -128,8 +130,9 @@ function mk_son_by_data(pgid, data) {
 // }
 
 function mk_son_by_name(pgid, name) {
+  // console.log("mk_son_by_name")
   return (async ()=>{
-    console.log("mk_son_by_name",pgid,name)
+    // console.log("mk_son_by_name",pgid,name)
     var pNode=await  read_node(pgid) ;//找到父节点
     if(!pNode){
       throw ('cannot find parent node '+pgid);
@@ -157,6 +160,8 @@ function mk_son_by_name(pgid, name) {
 }
 
 function mk_brother_by_data(bgid,data) {
+  // console.log("mk_brother_by_data")
+
   return (async ()=>{
     var pNode=await findParentAsync(bgid);//找到父节点
     if(!pNode){
@@ -178,11 +183,11 @@ function update_data(gid, data) {
 //gids是要访问的节点id的列表
 //visit是一个函数。访问节点的动作。
 function _traversal_all_children(gids,visit) {
-  console.log("_traversal_all_children",gids);
+  // console.log("_traversal_all_children",gids);
   if (!gids||gids.length==0) {return Promise.resolve();}//需要返回一个promise 
   return Promise.all(gids.map(gid => {
     return read_node(gid).then(node=>{ //读取当前节点
-      console.log(node,node._link.children)
+      // console.log(node,node._link.children)
       return _traversal_all_children(node._link.children,visit).then(()=>{ //访问所有子节点
         return visit(node); //然后访问当前节点
       })
@@ -220,6 +225,7 @@ function _isAncestor(pgid,gid){
 }
 
 function _move_as_son(gid, npNode,bgid){
+  console.log("_move_as_son gid, npNode,bgid",gid, npNode,bgid)
   return (async ()=>{
     var gidIsAncestorOfNewParentNode=await _isAncestor(gid,npNode._id);
     if(gidIsAncestorOfNewParentNode){
@@ -244,6 +250,7 @@ function _move_as_son(gid, npNode,bgid){
 // //包含3步。 1.从gid的原父节点删除。2改变gid的当前父节点。 3。注册到新父节点
 // //移动前需要做检查。祖先节点不能移动为后辈的子节点
 function move_as_son(gid, pgid) {
+  console.log("move_as_son,gid, pgid",gid,pgid)
   return (async ()=>{
     var npNode=await read_node(pgid);//找到新父节点
     return _move_as_son(gid,npNode);
@@ -251,6 +258,7 @@ function move_as_son(gid, pgid) {
 }
 
 function move_as_brother(gid, bgid) {
+  console.log("move_as_brother,gid, pgid",gid,bgid)
   return (async ()=>{
     var npNode=await findParentAsync(bgid);//找到新父节点
     if(!npNode){

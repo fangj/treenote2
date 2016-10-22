@@ -29,7 +29,7 @@ function factory(config) {
 
   router.post('/mk/son/:gid', 
     function(req, res, next) {
-    logger.debug(req.body);
+    // logger.debug(req.body);
 
     tree.mk_son_by_data(req.params.gid, req.body).then(node => {
       // logger.debug(node);
@@ -42,7 +42,7 @@ function factory(config) {
 
   router.post('/mk/son_name/:gid', 
     function(req, res, next) {
-    logger.debug(req.body);
+    // logger.debug(req.body);
 
     tree.mk_son_by_name(req.params.gid, req.body.name).then(node => {
       // logger.debug(node);
@@ -106,7 +106,7 @@ function factory(config) {
     }else{
         return tree.read_nodes(node._link.children)
         .then(nodes=>{
-          logger.debug('children:',node._link.children,'nodes',nodes)
+          // logger.debug('children:',node._link.children,'nodes',nodes)
             const fnodes=nodes.map(node=>expand(node,level-1));
             return Promise.all(fnodes).then(nodes=>{
                 var cloneNode=clone(node);
