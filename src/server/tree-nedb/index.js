@@ -121,7 +121,7 @@ function mk_son_by_name(pgid, name) {
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    var node=await db.findOneAsync({"_name":name});//是否已有同名节点
+    var node=await db.findOneAsync({"_name":name,"_link.p":pgid});//是否已有同名节点
     if(node){
       return node;//如有直接返回
     }

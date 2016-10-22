@@ -98,15 +98,6 @@ function _mk_son_by_kv(pNode,key,value,bgid){
   })();
 }
 
-function _mk_son_by_data(pNode,data,bgid){
-  return _mk_son_by_kv(pNode,"_data",data,bgid);
-}
-
-function _mk_son_by_name(pNode,name,bgid){
-  return _mk_son_by_kv(pNode,"_name",name,bgid);
-}
-
-
 function mk_son_by_data(pgid, data) {
   return (async ()=>{
     var pNode=await db.findOne({"_id":pgid});//找到父节点
@@ -114,7 +105,7 @@ function mk_son_by_data(pgid, data) {
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    return _mk_son_by_data(pNode,data);
+    return _mk_son_by_kv(pNode,"_data",data);
   })();
 }
 
@@ -125,11 +116,11 @@ function mk_son_by_name(pgid, name) {
       throw ('cannot find parent node '+pgid);
       return null;//父节点不存在，无法插入，返回null
     }
-    var node=await db.findOne({"_name":name});//是否已有同名节点
+    var node=await db.findOne({"_name":name,"_link.p":pgid});//是否已有同名节点
     if(node){
       return node;//如有直接返回
     }
-    return _mk_son_by_name(pNode,name);
+    return _mk_son_by_kv(pNode,"_name",name);
   })();
 }
 

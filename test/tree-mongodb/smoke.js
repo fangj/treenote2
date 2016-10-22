@@ -64,6 +64,9 @@ describe('tree', function(){
         var son= await(tree.mk_son_by_name('0','hello'));
         assert.equal(typeof son,'object');
         console.log(son)
+        var son2= await(tree.mk_son_by_name('0','hello'));
+        assert.equal(typeof son2,'object');
+        console.log(son2)
         done();
     })()
   });
