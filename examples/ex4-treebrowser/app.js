@@ -1,3 +1,5 @@
+require("babel-polyfill");
+
 var path=require('path');
 var express = require('express');
 var expressRestResource = require('express-rest-resource');
@@ -15,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 var treeDb = new nedb({ filename: 'treeDb', autoload: true });
-var tree=require('treenote2/src/server/middleware/tree.js');
+var tree=require('treenote2/lib/server/middleware/tree.js');
 var config={nedb:treeDb};
 app.use('/_api', tree(config));
 

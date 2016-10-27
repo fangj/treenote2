@@ -1,15 +1,5 @@
-// var agent = require('superagent-promise')(require('superagent'), Promise);
+var agent = require('superagent-promise')(require('superagent'), Promise);
 
-import Frisbee from 'frisbee';
-
-// create a new instance of Frisbee
-const agent = new Frisbee({
-  baseURI: '/',
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
-});
 
 var prefix;
 const api = {
@@ -35,22 +25,19 @@ function read(gid) {
 }
 
 function read_nodes(gids) {
-  return agent.post(prefix + '/nodes/', {body:gids}).then(res => res.body);
+  return agent.post(prefix + '/nodes/', gids).then(res => res.body);
 }
 
 function mk_son_by_data(pgid, data) {
-  if(typeof data!=="object"){
-    data={data}
-  }
-  return agent.post(prefix + '/mk/son/' + pgid, {body:data}).then(res => res.body);
+  return agent.post(prefix + '/mk/son/' + pgid, data).then(res => res.body);
 }
 
 function mk_son_by_name(pgid, name) {
-  return agent.post(prefix + '/mk/son_name/' + pgid, {body:{name}}).then(res => res.body);
+  return agent.post(prefix + '/mk/son_name/' + pgid, {name}).then(res => res.body);
 }
 
 function mk_brother_by_data(bgid, data) {
-  return agent.post(prefix + '/mk/brother/' + bgid, {body:data}).then(res => res.body);
+  return agent.post(prefix + '/mk/brother/' + bgid, data).then(res => res.body);
 }
 
 function remove(gid) {
@@ -58,10 +45,7 @@ function remove(gid) {
 }
 
 function update(gid, data) {
-  if(typeof data!=="object"){
-    data={data}
-  }
-  return agent.put(prefix + '/' + gid, {body:data}).then(res => res.body);
+  return agent.put(prefix + '/' + gid, data).then(res => res.body);
 }
 
 function  mv_as_son(sgid,dgid){

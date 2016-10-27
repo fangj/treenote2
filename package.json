@@ -16,6 +16,7 @@
     "babel-polyfill": "^6.16.0",
     "bluebird": "^3.4.6",
     "eslint": "^3.7.1",
+    "frisbee": "^1.1.4",
     "fs-extra": "^0.30.0",
     "leancloud-storage": "^1.5.0",
     "leanengine": "^1.2.2",
