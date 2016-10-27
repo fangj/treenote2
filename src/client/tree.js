@@ -39,7 +39,9 @@ function read_nodes(gids) {
 }
 
 function mk_son_by_data(pgid, data) {
-  if(typeof data!=="object"){
+  if(data===null){
+    data={}
+  }else if( typeof data!=="object"){
     data={data}
   }
   return agent.post(prefix + '/mk/son/' + pgid, {body:data}).then(res => res.body);
@@ -58,7 +60,9 @@ function remove(gid) {
 }
 
 function update(gid, data) {
-  if(typeof data!=="object"){
+  if(data===null){
+    data={}
+  }else if( typeof data!=="object"){
     data={data}
   }
   return agent.put(prefix + '/' + gid, {body:data}).then(res => res.body);

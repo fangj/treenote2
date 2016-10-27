@@ -47,7 +47,7 @@ function render(node,vtype){
   //新建节点
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
     return <div style={{height:"50px"}} onClick={()=>{
-      tree.mk_son_by_data(node._p,"new").then(_=>{
+      tree.mk_son_by_data(node._p,null).then(_=>{
         console.log("publish updated ")
         PubSub.publish("TreeBrowser",{msg:"refresh"});
       });

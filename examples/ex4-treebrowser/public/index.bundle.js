@@ -70,7 +70,7 @@ webpackJsonp([0],[
 	    return _react2.default.createElement(
 	      'div',
 	      { style: { height: "50px" }, onClick: function onClick() {
-	          tree.mk_son_by_data(node._p, "new").then(function (_) {
+	          tree.mk_son_by_data(node._p, null).then(function (_) {
 	            console.log("publish updated ");
 	            PubSub.publish("TreeBrowser", { msg: "refresh" });
 	          });
@@ -11788,7 +11788,9 @@ webpackJsonp([0],[
 	}
 
 	function mk_son_by_data(pgid, data) {
-	  if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== "object") {
+	  if (data === null) {
+	    data = {};
+	  } else if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== "object") {
 	    data = { data: data };
 	  }
 	  return agent.post(prefix + '/mk/son/' + pgid, { body: data }).then(function (res) {
@@ -11815,7 +11817,9 @@ webpackJsonp([0],[
 	}
 
 	function update(gid, data) {
-	  if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== "object") {
+	  if (data === null) {
+	    data = {};
+	  } else if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== "object") {
 	    data = { data: data };
 	  }
 	  return agent.put(prefix + '/' + gid, { body: data }).then(function (res) {
