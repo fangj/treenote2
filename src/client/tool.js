@@ -83,12 +83,26 @@ function createNodeByPath(path){
     return paths.reduce(f,tree.read(gid));
 }
 
+//node为展开的节点，拥有_children
+//gid为展开节点中的一个，求gid的展开层级
+//level为node所在层级
+function findLevel(node,gid,level=1){
+    if(node._id===gid){
+        return level;//当前节点就是，返回当前层级
+    }else if(node._children.length>0){
+        return _.compact(node._children.map(node=>findLevel(node,gid,level+1)))[0];
+    }else{
+        return null;//当前节点不是，又没有子节点，返回null
+    }
+}
+
 module.exports = function(_tree) {
     tree = _tree;
     return {
         expand,
         expand2,
         expandToRoot,
-        createNodeByPath
+        createNodeByPath,
+        findLevel
     }
 }

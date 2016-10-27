@@ -65,7 +65,12 @@ const TreeBrowser=(props)=>{
     //   console.log('TreeBrowser',node);
     // }
     //test end
-    var isHideRoot=hideRoot&&level===1;
+    var isHideRoot=hideRoot&&level===1;//隐藏第一列
+    var focusLevel;
+    if(level===1){
+      focusLevel=treetool.findLevel(node,focus);
+      console.log("focusLevel",focusLevel);
+    }
     return (
         <div className={cx("node",{focus:focus===node._id},{hideRoot:isHideRoot})} id={node._id}
         data-level={level}>
@@ -74,13 +79,13 @@ const TreeBrowser=(props)=>{
             {menu(node,tree,treetool)}
           </div>
         }
-          {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:_.includes(node._link.children, focus)})}>
+          {!_.includes(expands,node._id)?null:<div className={cx("children",{focus:((level+1)===focusLevel)})}>
           <div className="vnode" >
             <div  className="main">
             {render(vnode)}
             </div>
           </div>
-          {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others} level={level+1}/>)}
+          {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others} level={level+1} focusLevel={focusLevel}/>)}
           </div>}
         </div>
         
