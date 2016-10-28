@@ -68,7 +68,7 @@ function dragover(ev){
 }
 
 function ensureFocusColumn(focus){
-  $("#"+focus).closest(".children").addClass("focus");
+  $("#"+focus).closest(".children").addClass("focus");//拖拽后保证focus,以免新旧卡片尺寸不一致
 }
 
 

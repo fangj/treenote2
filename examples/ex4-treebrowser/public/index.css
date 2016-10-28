@@ -19,13 +19,16 @@
   border: 1px dashed gray;
 }
 .node.focus {
-  width: 600px;
+  width: 320px;
 }
 .node.focus > .main {
   border: 2px solid black;
 }
-.children.focus > .node {
-  width: 600px;
+.children.focus > .node,
+.children.focus-2 > .node,
+.children.focus-1 > .node,
+.children.focus0 > .node {
+  width: 320px;
 }
 .node {
   transition-duration: 0.8s;

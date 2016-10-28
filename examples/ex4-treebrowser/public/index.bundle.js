@@ -259,11 +259,14 @@ webpackJsonp([0],[
 	  // }
 	  //test end
 	  var isHideRoot = hideRoot && level === 1; //隐藏第一列
-	  var focusLevel;
+	  var focusLevel = 0;
 	  if (level === 1) {
 	    focusLevel = treetool.findLevel(node, focus);
 	    console.log("focusLevel", focusLevel);
+	  } else {
+	    focusLevel = props.focusLevel;
 	  }
+	  var levelDiff = level - focusLevel; //当前级别与焦点级别的距离
 	  return _react2.default.createElement(
 	    'div',
 	    { className: cx("node", { focus: focus === node._id }, { hideRoot: isHideRoot }), id: node._id,
@@ -276,14 +279,14 @@ webpackJsonp([0],[
 	    ),
 	    !_.includes(expands, node._id) ? null : _react2.default.createElement(
 	      'div',
-	      { className: cx("children", { focus: level + 1 === focusLevel }) },
+	      { className: cx("children", "focus" + levelDiff) },
 	      _react2.default.createElement(
 	        'div',
 	        { className: 'vnode' },
 	        _react2.default.createElement(
 	          'div',
 	          { className: 'main' },
-	          render(vnode)
+	          render(vnode, levelDiff, focus)
 	        )
 	      ),
 	      node._children.map(function (node) {
@@ -22289,7 +22292,7 @@ webpackJsonp([0],[
 	}
 
 	function ensureFocusColumn(focus) {
-	  $("#" + focus).closest(".children").addClass("focus");
+	  $("#" + focus).closest(".children").addClass("focus"); //拖拽后保证focus,以免新旧卡片尺寸不一致
 	}
 
 	module.exports = {
