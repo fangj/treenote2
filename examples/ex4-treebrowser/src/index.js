@@ -42,8 +42,8 @@ var tree=require('treenote2/src/client/tree-cache.js')("_api");
 //   // targetNode.parentElement.appendChild(sourceNode);
 //   targetNode.parentElement.insertBefore(sourceNode,targetNode);
 // }
-
-function render(node,vtype){
+//options={levelDiff,isFocus}
+function render(node,options){
   //新建节点
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
     return <div style={{height:"50px"}} onClick={()=>{
@@ -53,6 +53,11 @@ function render(node,vtype){
       });
     }}>+{node._p}</div>
   }
+  //按照层级显示大小
+  // const {levelDiff,isFocus}=options;
+  // if(levelDiff && Math.abs(levelDiff)>1){
+  //   return <div>V</div>
+  // }
   return <div>
     <div 
     onClick={(e)=>{

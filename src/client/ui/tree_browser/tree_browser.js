@@ -74,18 +74,19 @@ const TreeBrowser=(props)=>{
       focusLevel=props.focusLevel;
     }
     const levelDiff=level-focusLevel;//当前级别与焦点级别的距离
+    const isFocus=(focus===node._id);
     return (
-        <div className={cx("node",{focus:focus===node._id},{hideRoot:isHideRoot})} id={node._id}
+        <div className={cx("node",{focus:isFocus},{hideRoot:isHideRoot})} id={node._id}
         data-level={level}>
         {isHideRoot?null:<div className="main" onDrop={d.drop} onDragOver={d.dragover}>
-            {render(node)}
+            {render(node,{levelDiff,isFocus})}
             {menu(node,tree,treetool)}
           </div>
         }
           {!_.includes(expands,node._id)?null:<div className={cx("children","focus"+levelDiff)}>
           <div className="vnode" >
             <div  className="main">
-            {render(vnode,levelDiff,focus)}
+            {render(vnode,{levelDiff})}
             </div>
           </div>
           {node._children.map(node=><TreeBrowser key={node._id} node={node} {...others} level={level+1} focusLevel={focusLevel}/>)}
