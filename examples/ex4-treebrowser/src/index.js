@@ -5,6 +5,8 @@ import TreeNodeReader from 'treenote2/src/client/ui/tree_node_reader';
 var PubSub =require('pubsub-js');
 
 var tree=require('treenote2/src/client/tree-cache.js')("_api");
+var txt_editor=require('./txt_editor');
+var _=require('lodash');
 
 // function scroll2card(id){ //已经移到tree_browser中
 //   var card=$("#"+id);
@@ -61,7 +63,7 @@ function render(node,options){
   //检查编辑状态
   const {isEdit}=options;
   if(isEdit){
-    return  <div>isEdit</div>
+    return  txt_editor(node);
   }
   return <div>
     <div 
@@ -72,10 +74,22 @@ function render(node,options){
         // setTimeout(_=>scroll2card(node._id),1000)
     }} 
       >
-    <pre>{JSON.stringify({id:node._id,name:node._name,link:node._link},null,2)}</pre>
+    {show(node)}
     </div>
   </div>
 }
+
+const show=(node)=>{
+  const type=_.get(node,"_data.type");
+  const data=_.get(node,"_data.data");
+  if(type=='tn/txt'){
+    return <pre>{data}</pre>
+  }
+  return <pre>{json(node)}</pre>;
+
+}
+
+const json=(node)=>JSON.stringify({id:node._id,name:node._name,link:node._link,data:node._data},null,2)
 
 
         

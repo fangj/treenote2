@@ -11,7 +11,7 @@
 }
 .node {
   box-sizing: border-box;
-  width: 250px;
+  width: 320px;
 }
 .node .main {
   height: 100%;
