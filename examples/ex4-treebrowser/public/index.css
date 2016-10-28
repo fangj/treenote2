@@ -45,6 +45,9 @@
 .main:hover .menu {
   display: block;
 }
+.main.edit:hover .menu {
+  display: none;
+}
 @keyframes myfirst {
   from {
     opacity: 0;
@@ -65,4 +68,7 @@ div.placeholder {
 div.placeholder:before {
   content: "<";
   color: #e1d25a;
+}
+pre {
+  margin: 0;
 }

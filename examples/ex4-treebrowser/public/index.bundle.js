@@ -84,6 +84,16 @@ webpackJsonp([0],[
 	  // if(levelDiff && Math.abs(levelDiff)>1){
 	  //   return <div>V</div>
 	  // }
+	  //检查编辑状态
+	  var isEdit = options.isEdit;
+
+	  if (isEdit) {
+	    return _react2.default.createElement(
+	      'div',
+	      null,
+	      'isEdit'
+	    );
+	  }
 	  return _react2.default.createElement(
 	    'div',
 	    null,
@@ -241,6 +251,13 @@ webpackJsonp([0],[
 	          }
 	        } },
 	      _react2.default.createElement('i', { className: 'fa fa-trash' })
+	    ),
+	    _react2.default.createElement(
+	      'button',
+	      { className: 'btn btn-default btn-xs', onClick: function onClick() {
+	          PubSub.publish("TreeBrowser", { msg: "edit", gid: node._id });
+	        } },
+	      _react2.default.createElement('i', { className: 'fa fa-edit' })
 	    )
 	  );
 	};
@@ -256,6 +273,7 @@ webpackJsonp([0],[
 	  var tree = props.tree;
 	  var level = props.level;
 	  var hideRoot = props.hideRoot;
+	  var edit = props.edit;
 
 	  var treetool = __webpack_require__(9)(tree);
 	  var vnode = { _type: "vnode", _p: node._id };
@@ -274,14 +292,15 @@ webpackJsonp([0],[
 	  }
 	  var levelDiff = level - focusLevel; //当前级别与焦点级别的距离
 	  var isFocus = focus === node._id;
+	  var isEdit = edit === node._id;
 	  return _react2.default.createElement(
 	    'div',
 	    { className: cx("node", { focus: isFocus }, { hideRoot: isHideRoot }), id: node._id,
 	      'data-level': level },
 	    isHideRoot ? null : _react2.default.createElement(
 	      'div',
-	      { className: 'main', onDrop: d.drop, onDragOver: d.dragover },
-	      render(node, { levelDiff: levelDiff, isFocus: isFocus }),
+	      { className: cx("main", { edit: isEdit }), onDrop: d.drop, onDragOver: d.dragover },
+	      render(node, { levelDiff: levelDiff, isFocus: isFocus, isEdit: isEdit }),
 	      menu(node, tree, treetool)
 	    ),
 	    !_.includes(expands, node._id) ? null : _react2.default.createElement(
@@ -360,6 +379,8 @@ webpackJsonp([0],[
 	        } else if (data.msg == 'move') {
 	          //移动卡片
 	          paste(data.gid, data.bgid, tree, treetool);
+	        } else if (data.msg = "edit") {
+	          me.setState({ edit: data.gid });
 	        }
 	      }
 	      this.token = PubSub.subscribe("TreeBrowser", mysubscriber);

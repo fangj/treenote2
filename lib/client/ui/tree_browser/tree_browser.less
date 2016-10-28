@@ -62,6 +62,9 @@
 .main:hover .menu{
   display: block;
 }
+.main.edit:hover .menu{
+  display: none; //编辑状态下不显示菜单
+}
 //新元素动画
 @keyframes myfirst
 {
@@ -80,4 +83,7 @@ div.placeholder {background: rgb(255,240,120);}
 div.placeholder:before {
   content: "<";
   color: rgb(225,210,90);
+}
+pre{
+  margin:0;
 }

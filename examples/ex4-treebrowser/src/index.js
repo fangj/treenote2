@@ -58,6 +58,11 @@ function render(node,options){
   // if(levelDiff && Math.abs(levelDiff)>1){
   //   return <div>V</div>
   // }
+  //检查编辑状态
+  const {isEdit}=options;
+  if(isEdit){
+    return  <div>isEdit</div>
+  }
   return <div>
     <div 
     onClick={(e)=>{

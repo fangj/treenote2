@@ -52,12 +52,15 @@ const menu=(node,tree,treetool)=>{
                   })
                 }
               }}><i className="fa fa-trash"></i></button>
+              <button className="btn btn-default btn-xs" onClick={()=>{
+                PubSub.publish("TreeBrowser",{msg:"edit",gid:node._id});
+              }}><i className="fa fa-edit"></i></button>
             </div>
 }
 
 const TreeBrowser=(props)=>{
     const {node,...others}=props;
-    const {render,focus,expands,tree,level,hideRoot}=props;
+    const {render,focus,expands,tree,level,hideRoot,edit}=props;
     const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
     //test begin
@@ -75,11 +78,12 @@ const TreeBrowser=(props)=>{
     }
     const levelDiff=level-focusLevel;//当前级别与焦点级别的距离
     const isFocus=(focus===node._id);
+    const isEdit=(edit===node._id);
     return (
         <div className={cx("node",{focus:isFocus},{hideRoot:isHideRoot})} id={node._id}
         data-level={level}>
-        {isHideRoot?null:<div className="main" onDrop={d.drop} onDragOver={d.dragover}>
-            {render(node,{levelDiff,isFocus})}
+        {isHideRoot?null:<div className={cx("main",{edit:isEdit})} onDrop={d.drop} onDragOver={d.dragover} >
+            {render(node,{levelDiff,isFocus,isEdit})}
             {menu(node,tree,treetool)}
           </div>
         }
@@ -129,6 +133,8 @@ export default class tree_browser extends React.Component {
       me.forceUpdate();
      }else if(data.msg=='move'){ //移动卡片
       paste(data.gid,data.bgid,tree,treetool);
+     }else if(data.msg="edit"){
+      me.setState({edit:data.gid})
      }
     }
     this.token=PubSub.subscribe("TreeBrowser",mysubscriber)
