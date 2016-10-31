@@ -96,6 +96,10 @@ webpackJsonp([0],{
 	      llist: 0, mlist: 1, rlist: 2,
 	      mlist_y: 0, rlist_y: 0 };
 	    _this.accept = _this.accept.bind(_this);
+	    _this.handleTouchStart = _this.handleTouchStart.bind(_this);
+	    _this.handleTouchMove = _this.handleTouchMove.bind(_this);
+	    _this.handleTouchEnd = _this.handleTouchEnd.bind(_this);
+	    _this.handleTouchCancel = _this.handleTouchCancel.bind(_this);
 	    return _this;
 	  }
 
@@ -112,7 +116,7 @@ webpackJsonp([0],{
 	        ),
 	        _react2.default.createElement(
 	          'div',
-	          { className: 'list middlelist' },
+	          { className: 'list middlelist', ref: 'middlelist' },
 	          'middle',
 	          _react2.default.createElement('div', { className: 'card' }),
 	          _react2.default.createElement('div', { className: 'card' }),
@@ -125,6 +129,44 @@ webpackJsonp([0],{
 	          'right'
 	        )
 	      );
+	    }
+	  }, {
+	    key: 'componentDidMount',
+	    value: function componentDidMount() {
+	      var el = this.refs.middlelist;
+	      el.addEventListener('touchstart', this.handleTouchStart, false);
+	      el.addEventListener("touchend", this.handleTouchEnd, false);
+	      el.addEventListener("touchcancel", this.handleTouchCancel, false);
+	      el.addEventListener("touchmove", this.handleTouchMove, false);
+	    }
+	  }, {
+	    key: 'componentWillUnmount',
+	    value: function componentWillUnmount() {
+	      var el = this.refs.middlelist;
+	      el.removeEventListener('touchstart', this.handleTouchStart, false);
+	      el.removeEventListener("touchend", this.handleTouchEnd, false);
+	      el.removeEventListener("touchcancel", this.handleTouchCancel, false);
+	      el.removeEventListener("touchmove", this.handleTouchMove, false);
+	    }
+	  }, {
+	    key: 'handleTouchStart',
+	    value: function handleTouchStart(e) {
+	      console.log('touchstart', e.changedTouches[0].pageX);
+	    }
+	  }, {
+	    key: 'handleTouchEnd',
+	    value: function handleTouchEnd(e) {
+	      console.log('touchend', e.changedTouches[0].pageX);
+	    }
+	  }, {
+	    key: 'handleTouchMove',
+	    value: function handleTouchMove(e) {
+	      console.log('touchmove', e.changedTouches[0].pageX);
+	    }
+	  }, {
+	    key: 'handleTouchCancel',
+	    value: function handleTouchCancel(e) {
+	      console.log('touchcancel', e.changedTouches[0].pageX);
 	    }
 	  }, {
 	    key: 'accept',

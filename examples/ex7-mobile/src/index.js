@@ -55,6 +55,7 @@ var styles = {
 };
 
 
+
 export default class TreeViewMobile extends React.Component {
   static propTypes = {
     name: React.PropTypes.string,
@@ -66,13 +67,17 @@ export default class TreeViewMobile extends React.Component {
       llist:0,mlist:1,rlist:2,
       mlist_y:0,rlist_y:0}
     this.accept=this.accept.bind(this);
+    this.handleTouchStart=this.handleTouchStart.bind(this);
+    this.handleTouchMove=this.handleTouchMove.bind(this);
+    this.handleTouchEnd=this.handleTouchEnd.bind(this);
+    this.handleTouchCancel=this.handleTouchCancel.bind(this);
   }
 
   render() {
     return (
       <div className="tree-container">
         <div className="list leftlist">left</div>
-        <div className="list middlelist">middle
+        <div className="list middlelist" ref="middlelist">middle
           <div className="card"/>
           <div className="card"/>
           <div className="card"/>
@@ -84,6 +89,33 @@ export default class TreeViewMobile extends React.Component {
     );
   }
 
+  componentDidMount() {
+    const el=this.refs.middlelist;
+    el.addEventListener('touchstart', this.handleTouchStart, false);
+    el.addEventListener("touchend", this.handleTouchEnd, false);
+    el.addEventListener("touchcancel", this.handleTouchCancel, false);
+    el.addEventListener("touchmove", this.handleTouchMove, false);
+  }
+  componentWillUnmount() {
+    const el=this.refs.middlelist;
+    el.removeEventListener('touchstart', this.handleTouchStart, false);
+    el.removeEventListener("touchend", this.handleTouchEnd, false);
+    el.removeEventListener("touchcancel", this.handleTouchCancel, false);
+    el.removeEventListener("touchmove", this.handleTouchMove, false);
+  }
+
+  handleTouchStart(e){
+    console.log('touchstart',e.changedTouches[0].pageX) 
+  }
+  handleTouchEnd(e){
+    console.log('touchend',e.changedTouches[0].pageX) 
+  }
+   handleTouchMove(e){
+    console.log('touchmove',e.changedTouches[0].pageX) 
+  }
+   handleTouchCancel(e){
+    console.log('touchcancel',e.changedTouches[0].pageX) 
+  }
    accept(msg,data){
     var state=this.state||{}; //获取当前的state值
     const fns={
