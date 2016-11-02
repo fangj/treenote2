@@ -92,7 +92,7 @@ webpackJsonp([0],{
 
 	    var _this = _possibleConstructorReturn(this, (TreeViewMobile.__proto__ || Object.getPrototypeOf(TreeViewMobile)).call(this, props));
 
-	    _this.state = { contX: -width, leftX: 0, middleX: width, rightX: 2 * width,
+	    _this.state = { contX: 0, leftX: 0, middleX: width, rightX: 2 * width,
 	      llist: 0, mlist: 1, rlist: 2,
 	      mlist_y: 0, rlist_y: 0 };
 	    _this.accept = _this.accept.bind(_this);
@@ -106,9 +106,11 @@ webpackJsonp([0],{
 	  _createClass(TreeViewMobile, [{
 	    key: 'render',
 	    value: function render() {
+	      var contX = this.state.contX;
+
 	      return _react2.default.createElement(
 	        'div',
-	        { className: 'tree-container' },
+	        { className: 'tree-container', style: { left: contX } },
 	        _react2.default.createElement(
 	          'div',
 	          { className: 'list leftlist' },
@@ -152,16 +154,25 @@ webpackJsonp([0],{
 	    key: 'handleTouchStart',
 	    value: function handleTouchStart(e) {
 	      console.log('touchstart', e.changedTouches[0].pageX);
-	    }
-	  }, {
-	    key: 'handleTouchEnd',
-	    value: function handleTouchEnd(e) {
-	      console.log('touchend', e.changedTouches[0].pageX);
+	      var x = e.changedTouches[0].pageX;
+	      this.startX = x; //开始touch时的x位置
 	    }
 	  }, {
 	    key: 'handleTouchMove',
 	    value: function handleTouchMove(e) {
 	      console.log('touchmove', e.changedTouches[0].pageX);
+	      var x = e.changedTouches[0].pageX;
+	      var dx = x - this.startX;
+	      if (Math.abs(dx) > 20) {
+	        e.preventDefault(); //接管移动
+	        this.accept("contX", dx);
+	      }
+	    }
+	  }, {
+	    key: 'handleTouchEnd',
+	    value: function handleTouchEnd(e) {
+	      console.log('touchend', e.changedTouches[0].pageX);
+	      me.accept("panEnd", dx);
 	    }
 	  }, {
 	    key: 'handleTouchCancel',
@@ -173,7 +184,7 @@ webpackJsonp([0],{
 	    value: function accept(msg, data) {
 	      var state = this.state || {}; //获取当前的state值
 	      var fns = {
-	        // "contX":setContainerX, //响应msg的函数列表
+	        "contX": setContainerX //响应msg的函数列表
 	        // "panEnd":panEnd,
 	        // "panStart":panStart,
 	        // "measureCard":measureCard,
@@ -190,13 +201,72 @@ webpackJsonp([0],{
 	  }]);
 
 	  return TreeViewMobile;
-	}(_react2.default.Component); //end class
-
+	}(_react2.default.Component);
 
 	TreeViewMobile.propTypes = {
 	  name: _react2.default.PropTypes.string
 	};
 	exports.default = TreeViewMobile;
+	; //end class
+
+	function setContainerX(state, dx, msg) {
+	  state.contX = dx;
+	  return state;
+	}
+
+	function panStart(state, dx, msg, me) {
+	  me.panStartTime = Date.now(); //开始移动时间
+	  var layout = me.layouts[2]; //取得2号卡片的位置，假设2号卡片是拖动的卡片
+	  var scrollY = me.scrollY || 0;
+	  var posY = layout.y - scrollY; //减去滚动的相对位置，得到相对于屏幕的距离
+	  state.rlist_y = Math.max(posY, 0);
+	  // state.rlist_y=layout.y;
+	}
+
+	function panEnd(state, dx, msg, me) {
+	  console.log("panEnd");
+	  if (Math.abs(dx) < 20) {
+	    //不移动
+	    state.contX = -width;
+	    me.setState(state);
+	  } else {
+	    var panEndTime = Date.now();
+	    var v = (width - Math.abs(dx)) / (panEndTime - me.panStartTime);
+	    if (dx < -20) {
+	      //左移
+	      state.contX = dx;
+	      state.llist = state.mlist;
+	      state.mlist = state.rlist;
+	      state.mlist_y = state.rlist_y; //拷贝右侧位置
+	      state.rlist_y = 0; //恢复
+	      state.rlist = state.mlist + 1;
+	      me._scrollView.scrollTo({ x: 0, y: 0, animated: false });
+	      tweenH(me, state, v).chain(tweenUp(me, state)).start(); //左移后还需上移
+	    } else {
+	      //右移
+	      state.contX = -2 * width + dx;
+	      state.rlist = state.mlist;
+	      state.mlist = state.llist;
+	      state.llist = state.mlist - 1;
+	      tweenH(me, state, v).start();
+	    }
+	  }
+	  return null;
+	}
+
+	//横向移动动画
+	var tweenH = function tweenH(me, state, v) {
+	  return new TWEEN.Tween(state).easing(TWEEN.Easing.Quadratic.In).to({ contX: -width }, Math.abs(state.contX - -width) / v).onUpdate(function () {
+	    me.setState(state);
+	  });
+	};
+
+	var tweenUp = function tweenUp(me, state) {
+	  return new TWEEN.Tween(state).to({ mlist_y: 0 }, 300).onUpdate(function () {
+	    me.setState(state);
+	  });
+	};
+
 	_reactDom2.default.render(_react2.default.createElement(TreeViewMobile, null), document.getElementById('root'));
 
 /***/ },
