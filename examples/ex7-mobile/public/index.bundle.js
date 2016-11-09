@@ -27,8 +27,13 @@ webpackJsonp([0],[
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	__webpack_require__(3);
-	var TWEEN = __webpack_require__(7);
 
+	var TWEEN = __webpack_require__(7);
+	requestAnimationFrame(animate);
+	function animate(time) {
+	  requestAnimationFrame(animate);
+	  TWEEN.update(time);
+	}
 	// const W=window.innerWidth;
 	// const H=window.innerHeight;
 	// const CX0=-W;
@@ -78,31 +83,7 @@ webpackJsonp([0],[
 	          'div',
 	          { className: 'list middlelist', ref: 'middlelist',
 	            style: { left: W, width: W } },
-	          _react2.default.createElement(
-	            'div',
-	            { className: 'card' },
-	            m
-	          ),
-	          _react2.default.createElement(
-	            'div',
-	            { className: 'card' },
-	            m
-	          ),
-	          _react2.default.createElement(
-	            'div',
-	            { className: 'card' },
-	            m
-	          ),
-	          _react2.default.createElement(
-	            'div',
-	            { className: 'card' },
-	            m
-	          ),
-	          _react2.default.createElement(
-	            'div',
-	            { className: 'card' },
-	            m
-	          )
+	          m
 	        ),
 	        _react2.default.createElement(
 	          'div',

@@ -1,8 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 require("./index.less");
-var TWEEN = require('tween.js'); 
 
+var TWEEN = require('tween.js'); 
+requestAnimationFrame(animate);
+function animate(time) {
+    requestAnimationFrame(animate);
+    TWEEN.update(time);
+}
 // const W=window.innerWidth;
 // const H=window.innerHeight;
 // const CX0=-W;
@@ -33,11 +38,7 @@ export default class TreeViewMobile extends React.Component {
         <div className="list leftlist" style={{left:0,width:W}}>{l}</div>
         <div className="list middlelist"  ref="middlelist"
          style={{left:W,width:W}}>
-          <div className="card">{m}</div>
-          <div className="card">{m}</div>
-          <div className="card">{m}</div>
-          <div className="card">{m}</div>
-          <div className="card">{m}</div>
+         {m}
         </div>
         <div className="list rightlist" style={{left:W*2,width:W}}>{r}</div>
       </div>
