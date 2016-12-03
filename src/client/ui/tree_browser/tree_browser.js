@@ -8,7 +8,7 @@ var d=require('./dom_operation');
 var clipboard;//剪贴板，用于存放当前剪切的node id
 
 
-
+//检查目标和源的关系。因为一个节点不能剪切到自己的子节点
 function isDescendant(target,source,treetool){ //check whether target is  descendant of source
   return treetool.expandToRoot([target],source).then(idpath=>{
     return idpath.indexOf(source)>-1;
@@ -29,6 +29,7 @@ function paste(from,to,tree,treetool){
   })
 }
 
+//拖拽用的句柄，以及剪切粘贴删除的功能键
 const menu=(node,tree,treetool)=>{
     return <div className="menu">
               <button className="btn btn-default btn-xs"
@@ -63,11 +64,6 @@ const TreeBrowser=(props)=>{
     const {render,focus,expands,tree,level,hideRoot,edit}=props;
     const treetool=require('treenote2/src/client/tool')(tree);
     const vnode={_type:"vnode",_p:node._id}
-    //test begin
-    // if(node._id=='0'){
-    //   console.log('TreeBrowser',node);
-    // }
-    //test end
     var isHideRoot=hideRoot&&level===1;//隐藏第一列
     var focusLevel=0;
     if(level===1){
@@ -76,9 +72,9 @@ const TreeBrowser=(props)=>{
     }else{
       focusLevel=props.focusLevel;
     }
-    const levelDiff=level-focusLevel;//当前级别与焦点级别的距离
+    const levelDiff=level-focusLevel;//当前列与焦点卡片列的距离，目的是render函数可以根据与焦点的距离渲染不同的宽度和颜色
     const isFocus=(focus===node._id);
-    const isEdit=(edit===node._id);
+    const isEdit=(edit===node._id);//只能有一个正在编辑的节点
     return (
         <div className={cx("node",{focus:isFocus},{hideRoot:isHideRoot})} id={node._id}
         data-level={level}>
@@ -150,8 +146,8 @@ export default class tree_browser extends React.Component {
   }
   componentDidUpdate(prevProps, prevState) {
     const {focus}=this.state;
-    d.scroll2card(focus);
-    d.ensureFocusColumn(focus);
+    d.scroll2card(focus);//每次更新后把焦点卡片移到窗口中
+    d.ensureFocusColumn(focus); //每次更新后保证焦点卡片所在列为焦点列
   }
 }
 
@@ -161,6 +157,10 @@ function path2gid(treetool,gidOrPath){
   return hasSlash(gidOrPath)?treetool.createNodeByPath(gidOrPath).then(node=>node._id):Promise.resolve(gidOrPath);//有斜杠的视为路径，没有的视为gid直接返回
 }
 
+//当点击某卡片成为焦点时，expands序列发生变化
+//焦点的祖先节点不变
+//其后的节点只有新焦点
+//原焦点的子孙节点消失
 function buildExpandsWithFocus(expands,focus,pgid) {
   var idx=expands.indexOf(pgid);
   if(idx<0){return expands;}//没找到直接返回

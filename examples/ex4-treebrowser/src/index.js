@@ -8,59 +8,20 @@ var tree=require('treenote2/src/client/tree-cache.js')("_api");
 var txt_editor=require('./txt_editor');
 var _=require('lodash');
 
-// function scroll2card(id){ //已经移到tree_browser中
-//   var card=$("#"+id);
-//   var cardX=card.offset().left;
-//   var cardY=card.offset().top;
-//   // window.scrollTo(cardX-20,cardY-20);
-//   // $('html,body').animate({scrollLeft:cardX-20,scrollTop:cardY-20}, 800);
-//   $('html,body').animate({scrollLeft:cardX-200}, 800); //只改变横坐标
-// }
 
-// function dragOver(ev)
-// {
-//   ev.preventDefault();
-// }
-
-// function drag(ev)
-// {
-//   ev.dataTransfer.setData("node",ev.target.id);
-//   ev.dataTransfer.dropEffect = "move";
-// }
-
-// function drop(ev)
-// {
-//   ev.preventDefault();
-//   var sourceID=ev.dataTransfer.getData("node");
-//   var target=ev.target;
-//   if(!target.id){
-//     target=ev.target.parentElement; //target有时候时目标元素的子元素
-//   }
-//   console.log('s',sourceID,'t',target.id,ev.target);
-//   // target.parentElement.parentElement.parentElement.appendChild(document.getElementById(sourceID).parentElement.parentElement);
-//   if(target.id=='0')return;//不能移动为根节点的兄弟
-//   var targetNode=target.parentElement.parentElement.parentElement;
-//   var sourceNode=document.getElementById(sourceID).parentElement.parentElement.parentElement;
-//   // targetNode.parentElement.appendChild(sourceNode);
-//   targetNode.parentElement.insertBefore(sourceNode,targetNode);
-// }
-//options={levelDiff,isFocus}
 function render(node,options){
   //新建节点
+  //vnode是虚拟节点，把新建节点的块作为一个特殊节点来处理
   if(node._type=='vnode'){ //虚节点,{_type:"vnode",_p:"pgid"}
     return <div style={{height:"50px"}} onClick={()=>{
       tree.mk_son_by_data(node._p,null).then(_=>{
         console.log("publish updated ")
         PubSub.publish("TreeBrowser",{msg:"refresh"});
+        //新建节点后通过向TreeBrowser发送refresh消息使其更新
       });
     }}>+{node._p}</div>
   }
-  //按照层级显示大小
-  // const {levelDiff,isFocus}=options;
-  // if(levelDiff && Math.abs(levelDiff)>1){
-  //   return <div>V</div>
-  // }
-  //检查编辑状态
+  //检查编辑状态，通过编辑状态决定是否显示编辑界面（todo:将由BlockViewController接管)
   const {isEdit}=options;
   if(isEdit){
     return  txt_editor(node);
@@ -70,8 +31,7 @@ function render(node,options){
     onClick={(e)=>{
       console.log("node",node)
         PubSub.publish("TreeBrowser",{msg:'focus',gid:node._id,pgid:node._link.p})
-        // scroll2card(node._id);
-        // setTimeout(_=>scroll2card(node._id),1000)
+        //向TreeBrowser发送focus消息来转移焦点块
     }} 
       >
     {show(node)}
@@ -79,6 +39,7 @@ function render(node,options){
   </div>
 }
 
+//show负责纯粹的数据显示
 const show=(node)=>{
   const type=_.get(node,"_data.type");
   const data=_.get(node,"_data.data");
@@ -93,13 +54,13 @@ const json=(node)=>JSON.stringify({id:node._id,name:node._name,link:node._link,d
 
 
         
-// ReactDOM.render(
-//    <div>
-//    <TreeNodeReader tree={tree} view={props=><div>xx</div>} gid='0' />
-//    <TreeNodeReader tree={tree} view={TreeBrowser} root='0' gid='0' render={render} subscribe={["updated"]} expands={['0']} level={2}/>
-//    </div>,
-//   document.getElementById('root')
-// );
+//TreeBrowser用法
+//tree 数据API
+//render 显示数据的render
+//root 显示的根
+//focus 当前焦点节点
+//expands 要展开的节点，按顺序
+//hideRoot 是否隐藏根节点列
 
 ReactDOM.render(
    <div >
@@ -109,9 +70,3 @@ ReactDOM.render(
   document.getElementById('root')
 );
 
-// ReactDOM.render(
-//    <div>
-//    <TreeBrowser tree={tree} render={render} root='0' focus='aEPi425BJDu0Nw3O' level={3}/>
-//    </div>,
-//   document.getElementById('root')
-// );
