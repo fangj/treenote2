@@ -7,6 +7,10 @@ var PubSub =require ("pubsub-js");
 var d=require('./dom_operation');
 var clipboard;//剪贴板，用于存放当前剪切的node id
 
+/**
+ * 功能通过接受PubSub的msg完成
+ * 现在可以接受的有focus,refresh,move,edit
+ */
 
 //检查目标和源的关系。因为一个节点不能剪切到自己的子节点
 function isDescendant(target,source,treetool){ //check whether target is  descendant of source

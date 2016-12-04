@@ -1,0 +1,20 @@
+ # TreeBrowser
+ 现在可以接受的有focus,refresh,move,edit
+
+focus,refresh 是视图功能
+move 是节点位置调整功能，不涉及节点内容
+edit涉及节点内容。可能较为复杂，考虑转移到块内部完成。
+且focus,refersh,move涉及到整个树形的变化，放在TreeBrowser中处理也合理
+而edit只涉及编辑节点的变化，整体刷新没有必要。
+本着尽量局部化的原则，edit交由BVC处理
+
+在TreeBrowser中，每个块都是一个BVC
+
+render(node,{levelDiff,isFocus,isEdit})
+render(vnode,{levelDiff})
+
+render的调用方式可以保持不变
+具体实现上，可以先实现客户端代码
+然后转移到库中
+<BVC node levelDiff isFocus isEdit render/>
+<BVC vnode levelDiff render/>
